@@ -14,5 +14,11 @@ CHIP Bit {
     OUT out;
 
     PARTS:
-    // Put your code here:
+    // Pull the current value of the bit that stored in DFF 
+    // and store it in currval.
+    Mux(a=currval, b=in, sel=load, out=nextOut);
+    DFF(in=nextOut, out=currval);
+
+    // The output of the DFF is controlled by the load signal used in the Mux.
+    DFF(in=nextOut, out=out);
 }
