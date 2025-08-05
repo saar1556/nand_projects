@@ -16,5 +16,21 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    Register(in=next, load=toLoad, out=currVal);
+
+    // Reset the PC to 0 if reset is true, otherwise keep the current value.
+    Mux16(a=currVal, b=false, sel=reset, out=resetOut);
+    // Increment the PC by 1 if inc is true, otherwise keep the current value.
+    Inc16(in=currVal, out=incOut);
+
+    // Select the appropriate output based on the control signals.
+    Mux16(a=incOut, b=in, sel=load, out=incOrLoud);
+    Mux16(a=incOrLoud, b=resetOut, sel=reset, out=next);
+
+    // Determine if we should load the next value based on reset, load, or inc
+    Or(a=reset, b=load, out=tempLoad);
+    Or(a=tempLoad, b=inc, out=toLoad);
+
+    // The output of the PC is the current value stored in the register.
+    And16(a=currVal, b=true, out=out);
 }
