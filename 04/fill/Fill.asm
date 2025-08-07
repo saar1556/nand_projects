@@ -53,12 +53,12 @@
 // else make the screen white
 (WHITE)
     // check if its the end of screen
-    @counter
-    D = M
     @screenEnd
+    D = M
+    @counter
     D = D-M
     @LOOP
-    D;JEQ
+        D;JEQ
 
     // make the whole register white
     @counter
