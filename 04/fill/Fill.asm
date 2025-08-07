@@ -35,4 +35,60 @@
 // - Remind you to select 'no animation', and then test the program
 //   interactively by pressing and releasing some keyboard keys
 
-// Put your code here.
+(LOOP)
+    @8192
+    D = A
+    @screenEnd
+    M = D
+    @counter
+    M = 0
+
+    // check ekyboard input
+    @KBD
+    D = M
+    // if no input go to black loop
+    @BLACK
+        D;JNE
+
+// else make the screen white
+(WHITE)
+    // check if its the end of screen
+    @counter
+    D = M
+    @screenEnd
+    D = D-M
+    @LOOP
+    D;JEQ
+
+    // make the whole register white
+    @counter
+    D = M
+    @SCREEN
+    A = A + D
+    M = 0
+
+    @counter
+    M = M + 1
+    @WHITE
+    0;JMP
+
+(BLACK)
+    // check if its the end of screen
+    @counter
+    D = M
+    @screenEnd
+    D = D-M
+    @LOOP
+    D;JEQ
+
+    // make the whole register black
+    @counter
+    D = M
+    @SCREEN
+    A = A + D
+    M = -1
+    
+    @counter
+    M = M + 1
+    @BLACK
+    0;JMP
