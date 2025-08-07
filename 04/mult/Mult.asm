@@ -16,4 +16,47 @@
 // - Your program should not change the values stored in R0 and R1.
 // - You can implement any multiplication algorithm you want.
 
-// Put your code here.
+// Pusedo code:
+//sum = 0
+//i = 1
+//for (i<R2; i=i+1)
+//    sum=sum+R1
+
+
+// Initilaze sum and i
+@R2
+M=0
+
+@i
+M=0
+
+(LOOP)
+    // Check if i > R1
+    @R1
+    D=M
+
+    @i
+    D=D-M
+
+    @END
+    D;JEQ
+
+    // Add R1 to sum and increment i
+    @R0
+    D=M
+
+    @R2
+    M=M+D
+
+    // i=i+1
+    @i
+    M=M+1
+
+    // Jump back to the loop condition
+    @LOOP
+    0;JMP    
+
+(END)
+    // End of the program
+    @END
+    0;JMP
