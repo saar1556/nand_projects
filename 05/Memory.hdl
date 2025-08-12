@@ -40,22 +40,10 @@ CHIP Memory {
     And (a=address[14], b=notA13, out=isScreenRange);
     And (a=isScreenRange, b=load, out=loadScreen);
 
-    // check if its KBD valid address 
-    // Or8Way(in=address[0..7], out=low1);
-    // Or8Way(in[0..4]=address[8..12], in[5..7]=false, out=low2);
-    // Or(a=low1, b=low2, out=anyLowBit);
-    // Not(in=anyLowBit, out=lowIsZero);
-    // And (a=address[14], b=address[13], out=twoHighBits);
-    // And (a=twoHighBits, b=lowIsZero, out=validKbdAddress);
-
     // load and get outputs from RAM, Screen, and Keyboard
     RAM16K(in=in, load=loadRAM, address=address[0..13], out=ramOut);
     Screen (in=in, load=loadScreen, address=address[0..12], out=screenOut);
     Keyboard (out=keyboardOut);
-
-    // check if the address is valid for RAM, Screen, or Keyboard
-    //Or (a=validKbdAddress, b=isRAMRange, out=valid1);
-    //Or (a=valid1, b=isScreenRange, out=finalValid);
 
     // Mux to select the output based on the address validity
     Mux4Way16(a=ramOut, b=ramOut, c=screenOut, d=keyboardOut, sel[0]=address[13], sel[1]=address[14], out=out);
