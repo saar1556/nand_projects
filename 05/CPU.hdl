@@ -24,20 +24,52 @@
  * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
  * than to the address resulting from executing the current instruction. 
  */
-
 CHIP CPU {
-
-    IN  inM[16],         // M value input  (M = contents of RAM[A])
-        instruction[16], // Instruction for execution
-        reset;           // Signals whether to re-start the current
-                         // program (reset==1) or continue executing
-                         // the current program (reset==0).
-
-    OUT outM[16],        // M value output
-        writeM,          // Write to M? 
-        addressM[15],    // Address in data memory (of M)
-        pc[15];          // address of next instruction
+    IN  inM[16], instruction[16], reset;
+    OUT outM[16], writeM, addressM[15], pc[15];
 
     PARTS:
-    // Put your code here:
+        // is C-instruction?
+        And(a=instruction[15], b=true, out=Ccommand);
+        Not(in=Ccommand, out=Acommand);
+        And(a=instruction[3], b=Ccommand, out=writeM);
+
+        // Value to enter A register:
+        // A-instr -> instruction ; C-instr -> ALUout
+        Mux16(a=instruction, b=ALUout, sel=Ccommand, out=AregValue);
+
+        // A register load = A-instr OR (C-instr & d1)
+        And(a=instruction[5], b=Ccommand, out=writeA);
+        Or(a=writeA, b=Acommand, out=loadA);
+        ARegister(in=AregValue, load=loadA, out=AregOut, out[0..14]=addressM);
+
+        // D register load = C-instr & d2
+        And(a=instruction[4], b=Ccommand, out=writeD);
+        DRegister(in=ALUout, load=writeD, out=x);
+
+        // ALU: y = (a ? M : A), control = instr[11..6]
+        Mux16(a=AregOut, b=inM, sel=instruction[12], out=y);
+        ALU(x=x, y=y,
+            zx=instruction[11], nx=instruction[10],
+            zy=instruction[9],  ny=instruction[8],
+            f=instruction[7],   no=instruction[6],
+            out=ALUout, zr=zr, ng=ng);
+
+        // Copy internal ALUout to chip OUT
+        Mux16(a=ALUout, b=ALUout, sel=false, out=outM);
+
+        // Jump logic
+        And(a=instruction[2], b=ng, out=condLT);
+        And(a=instruction[1], b=zr, out=condEQ);
+        Not(in=ng, out=notng);
+        Not(in=zr, out=notzr);
+        And(a=notng, b=notzr, out=pos);
+        And(a=instruction[0], b=pos, out=condGT);
+
+        Or(a=condLT, b=condEQ, out=condLE);
+        Or(a=condLE, b=condGT, out=cond);
+        And(a=Ccommand, b=cond, out=load);
+        Not(in=load, out=inc);
+
+        PC(in=AregOut, reset=reset, load=load, inc=inc, out[0..14]=pc);
 }
