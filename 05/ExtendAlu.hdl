@@ -23,5 +23,45 @@ CHIP ExtendAlu {
      OUT out[16], zr, ng;
      
      PARTS:
-     // Put your code here:
+     // === INPUT SELECTION FOR SHIFT MODE ===
+     // Choose input to shift: 0 → y, 1 → x
+     Mux16 (a=y, b=x, sel=instruction[4], out=selectedInput);
+
+     // Shift operations
+     ShiftRight (in=selectedInput, out=shiftedRight);
+     ShiftLeft (in=selectedInput, out=shiftedLeft);
+
+     // Select shift direction: 0 → right, 1 → left
+     Mux16 (a=shiftedRight, b=shiftedLeft,
+          sel=instruction[5], out[0..7]=shiftInput1,
+          out[8..14]=shiftInput2, out[15]=shiftInput3);
+          
+     Or16 (a[0..7]=shiftInput1, a[8..14]=shiftInput2,
+          a[15]=shiftInput3, b=false, out=shiftInput);
+
+     // === ZERO FLAG FOR SHIFT MODE ===
+     Or8Way (in=shiftInput1, out=anyOne1);
+     Or8Way (in[0..6]=shiftInput2, in[7]=shiftInput3, out=anyOne2);
+     Or (a=anyOne1, b=anyOne2, out=anyOne);
+     Not (in=anyOne, out=shiftZr);
+
+     // === NEGATIVE FLAG FOR SHIFT MODE ===
+     // MSB=1 means negative
+     And (a=shiftInput3, b=true, out=shiftNg);
+     
+     // === SHIFT MODE FLAG CALCULATION ===
+     Not (in=instruction[8], out=notBit8);
+     And (a=notBit8, b=instruction[7], out=toShift);
+
+     // === ALU MODE CALCULATION ===
+     ALU (x=x, y=y, 
+         zx=instruction[5], nx=instruction[4], 
+         zy=instruction[3], ny=instruction[2], 
+         f=instruction[1], no=instruction[0],
+         out=ALUout, zr=ALUzr, ng=ALUng);
+
+     // === FINAL OUTPUT SELECTION ===
+     Mux16 (a=ALUout, b=shiftInput, sel=toShift, out=out);
+     Mux (a=ALUzr, b=shiftZr, sel=toShift, out=zr);
+     Mux (a=ALUng, b=shiftNg, sel=toShift, out=ng);
 }
