@@ -38,5 +38,16 @@ CHIP CpuMul {
         pc[15];          // address of next instruction
     
     PARTS:
-    // Put your code here:
+    
+    And (a=instruction[15], b=instruction[14], out=Ainstraction);
+    Not (in=instruction[15], out=notBit15);
+    Or (a=notBit15, b=Ainstraction, out=ALUmood);
+
+    CPU(inM=inM, instruction=instruction,
+        reset=reset, outM=CPUout, writeM=CPUwriteM,
+        addressM=CPUaddressM, pc=CPUpc);
+    
+    Not (in=ALUmood, out=mulMode);
+
+    Mux16 (a=)
 }
