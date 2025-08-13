@@ -65,7 +65,7 @@ CHIP CpuMul {
     And(a=instruction[10], b=MulMode, out=shiftToD1); 
     And(a=shiftToD1, b=aIs0, out=writeDshift);
     Or(a=writeDregular, b=writeDshift, out=writeD);
-    DRegister(in=ALUout, load=writeD, out=x);
+    DRegister(in=MandDout, load=writeD, out=x);
 
     // M write logic
     And(a=instruction[3], b=Ccommand, out=writeMregular);
@@ -87,7 +87,8 @@ CHIP CpuMul {
         out=ALUout, zr=ALUzr, ng=ALUng);
 
     // Output selection based on mode
-    Mux16(a=ALUout, b=extendALUout, sel=MulMode, out=outM);
+    Mux16(a=ALUout, b=extendALUout, sel=MulMode, out=MandDout);
+    And16(a=MandDout, b=true, out=outM);
     Mux(a=ALUzr, b=extendZr, sel=MulMode, out=zr);
     Mux(a=ALUng, b=extendNg, sel=MulMode, out=ng);
 
