@@ -14,6 +14,8 @@ class Parser:
     and provides convenient access to the commands components (fields
     and symbols). In addition, removes all white space and comments.
     """
+    input_lines: list[str]
+    current_command: str
 
     def __init__(self, input_file: typing.TextIO) -> None:
         """Opens the input file and gets ready to parse it.
@@ -21,10 +23,12 @@ class Parser:
         Args:
             input_file (typing.TextIO): input file.
         """
-        # Your code goes here!
-        # A good place to start is to read all the lines of the input:
-        # input_lines = input_file.read().splitlines()
-        pass
+        self.input_lines = []
+        for line in input_file.read().splitlines():
+            clean_line = line.split('//')[0].strip()
+            if clean_line:
+                self.input_lines.append(clean_line)
+        self.current_line = 0
 
     def has_more_commands(self) -> bool:
         """Are there more commands in the input?
@@ -32,15 +36,21 @@ class Parser:
         Returns:
             bool: True if there are more commands, False otherwise.
         """
-        # Your code goes here!
-        pass
+        if len(self.input_lines) == self.current_line:
+            return False
+        else:
+            return True
+
+    def reset(self) -> None:
+        self.current_line = 0
 
     def advance(self) -> None:
         """Reads the next command from the input and makes it the current command.
         Should be called only if has_more_commands() is true.
         """
-        # Your code goes here!
-        pass
+        self.current_command = self.input_lines[self.current_line]
+        self.current_line += 1
+        
 
     def command_type(self) -> str:
         """
@@ -50,8 +60,13 @@ class Parser:
             "C_COMMAND" for dest=comp;jump
             "L_COMMAND" (actually, pseudo-command) for (Xxx) where Xxx is a symbol
         """
-        # Your code goes here!
-        pass
+        if self.current_command.startswith('@'):
+            return "A_COMMAND"
+        elif self.current_command.startswith('('):
+            return "L_COMMAND"
+        else:
+            return "C_COMMAND"
+        
 
     def symbol(self) -> str:
         """
@@ -60,8 +75,12 @@ class Parser:
             (Xxx). Should be called only when command_type() is "A_COMMAND" or 
             "L_COMMAND".
         """
-        # Your code goes here!
-        pass
+        if self.command_type() == "A_COMMAND":
+            return self.current_command[1:]
+        elif self.command_type() == "L_COMMAND":
+            return self.current_command[1:-1]
+        else:
+            raise ValueError("symbol() should only be called for A_COMMAND or L_COMMAND")
 
     def dest(self) -> str:
         """
@@ -69,8 +88,10 @@ class Parser:
             str: the dest mnemonic in the current C-command. Should be called 
             only when commandType() is "C_COMMAND".
         """
-        # Your code goes here!
-        pass
+        if '=' in self.current_command:
+            return self.current_command.split('=')[0]
+        else:
+            return 'null'
 
     def comp(self) -> str:
         """
@@ -78,8 +99,14 @@ class Parser:
             str: the comp mnemonic in the current C-command. Should be called 
             only when commandType() is "C_COMMAND".
         """
-        # Your code goes here!
-        pass
+        if ';' in self.current_command:
+            comp_part = self.current_command.split(';')[0]
+        else:
+            comp_part = self.current_command
+        if '=' in comp_part:
+            return comp_part.split('=')[1]
+        else:
+            return comp_part
 
     def jump(self) -> str:
         """
@@ -87,5 +114,7 @@ class Parser:
             str: the jump mnemonic in the current C-command. Should be called 
             only when commandType() is "C_COMMAND".
         """
-        # Your code goes here!
-        pass
+        if ';' in self.current_command:
+            return self.current_command.split(';')[1]
+        else:
+            return 'null'

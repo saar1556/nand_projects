@@ -15,7 +15,7 @@
 # IMPORTANT: This file assumes that the main is contained in "Main.py".
 #            If your main is contained elsewhere, you will need to change this.
 
-python3 Main.py $*
+python3 Main.py "$*"
 
 # This file is part of nand2tetris, as taught in The Hebrew University, and 
 # was written by Aviv Yaish. It is an extension to the specifications given

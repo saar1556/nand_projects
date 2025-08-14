@@ -13,6 +13,62 @@ from Parser import Parser
 from Code import Code
 
 
+def first_pass(parser: Parser, symbol_table: SymbolTable) -> None:
+    """Populates the symbol table with labels from the assembly code.
+
+    Args:
+        parser (Parser): the parser to read commands from.
+        symbol_table (SymbolTable): the symbol table to populate.
+    """
+    current_line_number = 0
+
+    while parser.has_more_commands():
+        parser.advance()
+        command_type = parser.command_type()
+
+        if command_type == "L_COMMAND":
+            symbol = parser.symbol()
+            if not symbol_table.contains(symbol):
+                symbol_table.add_entry(symbol, current_line_number)
+        else:
+            current_line_number += 1
+    parser.reset()
+
+def second_pass(parser: Parser, symbol_table: SymbolTable, output_file: typing.TextIO) -> None:
+
+    current_variable_address = 16
+
+    while parser.has_more_commands():
+        parser.advance()
+        output_command = ""
+        command_type = parser.command_type()
+
+        if command_type == "L_COMMAND":
+            continue
+
+        if command_type == "A_COMMAND":
+            symbol = parser.symbol()
+            if symbol.isdigit():
+                output_command =  f"0{int(symbol):015b}"
+            else:
+                if not symbol_table.contains(symbol):
+                    symbol_table.add_entry(symbol, current_variable_address)
+                    current_variable_address += 1
+                address = symbol_table.get_address(symbol)
+                output_command = f"{address:016b}"
+
+        elif command_type == "C_COMMAND":
+            dest = parser.dest()
+            comp = parser.comp()
+            jump = parser.jump()
+            output_command = (
+                Code.comp(comp) +
+                Code.dest(dest) +
+                Code.jump(jump)
+            )
+        output_file.write(output_command + "\n") 
+    output_file.flush()
+
 def assemble_file(
         input_file: typing.TextIO, output_file: typing.TextIO) -> None:
     """Assembles a single file.
@@ -21,13 +77,14 @@ def assemble_file(
         input_file (typing.TextIO): the file to assemble.
         output_file (typing.TextIO): writes all output to this file.
     """
-    # Your code goes here!
-    # A good place to start is to initialize a new Parser object:
-    # parser = Parser(input_file)
-    # Note that you can write to output_file like so:
-    # output_file.write("Hello world! \n")
-    pass
 
+    parser = Parser(input_file)
+    symbol_table = SymbolTable()
+    first_pass(parser, symbol_table)
+    second_pass(parser, symbol_table, output_file)
+
+
+    
 
 if "__main__" == __name__:
     # Parses the input path and calls assemble_file on each input file.
