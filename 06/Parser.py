@@ -89,7 +89,7 @@ class Parser:
             only when commandType() is "C_COMMAND".
         """
         if '=' in self.current_command:
-            return self.current_command.split('=')[0]
+            return self.current_command.split('=')[0].strip()
         else:
             return 'null'
 
@@ -100,13 +100,13 @@ class Parser:
             only when commandType() is "C_COMMAND".
         """
         if ';' in self.current_command:
-            comp_part = self.current_command.split(';')[0]
+            comp_part = self.current_command.split(';')[0].strip()
         else:
             comp_part = self.current_command
         if '=' in comp_part:
-            return comp_part.split('=')[1]
+            return comp_part.split('=')[1].strip()
         else:
-            return comp_part
+            return comp_part.strip()
 
     def jump(self) -> str:
         """
@@ -115,6 +115,6 @@ class Parser:
             only when commandType() is "C_COMMAND".
         """
         if ';' in self.current_command:
-            return self.current_command.split(';')[1]
+            return self.current_command.split(';')[1].strip()
         else:
             return 'null'

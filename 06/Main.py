@@ -61,10 +61,13 @@ def second_pass(parser: Parser, symbol_table: SymbolTable, output_file: typing.T
             dest = parser.dest()
             comp = parser.comp()
             jump = parser.jump()
+            a = Code.comp(comp)
+            b = Code.dest(dest)
+            c = Code.jump(jump)
             output_command = (
-                Code.comp(comp) +
-                Code.dest(dest) +
-                Code.jump(jump)
+                a +
+                b +
+                c
             )
         output_file.write(output_command + "\n") 
     output_file.flush()
