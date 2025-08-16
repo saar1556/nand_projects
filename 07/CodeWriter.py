@@ -11,16 +11,18 @@ import typing
 class CodeWriter:
     """Translates VM commands into Hack assembly code."""
 
+    dynamic_segments = {'local':'LCL', 'argument':'ARG', 'this':'THIS', 'that':'THAT'}
+    pointer_dict = {0:'THIS', 1:'THAT'}
+
     def __init__(self, output_stream: typing.TextIO) -> None:
         """Initializes the CodeWriter.
 
         Args:
             output_stream (typing.TextIO): output stream.
         """
-        # Your code goes here!
-        # Note that you can write to output_stream like so:
-        # output_stream.write("Hello world! \n")
-        pass
+        self.output_stream = output_stream
+        self.file_name = None
+        
 
     def set_file_name(self, filename: str) -> None:
         """Informs the code writer that the translation of a new VM file is 
@@ -40,7 +42,8 @@ class CodeWriter:
         # the function "translate_file" in Main.py using python's os library,
         # For example, using code similar to:
         # input_filename, input_extension = os.path.splitext(os.path.basename(input_file.name))
-        pass
+        self.file_name = filename
+
 
     def write_arithmetic(self, command: str) -> None:
         """Writes assembly code that is the translation of the given 
@@ -50,9 +53,88 @@ class CodeWriter:
 
         Args:
             command (str): an arithmetic command.
-        """
+        """segment: str, index: int
         # Your code goes here!
         pass
+
+    def write_push_pop_prefix(self, segment: str, index: int, is_pop: bool) -> str:
+        """
+        Generates the assembly code to calculate the target address for push/pop.
+        """
+
+        output = ""
+
+        if segment == 'constant':
+            output += f"@{index}\n"
+        if not is_pop:
+            output += "D=A\n"
+
+        elif segment == 'static':
+            static_var = f"{self.file_name}.{index}"
+            output += f"@{static_var}\n"
+            if not is_pop:
+                output += "D=M\n"
+            else:
+                output += "D=A\n"
+                output += "@R13\n"
+                output += "M=D\n"
+
+        elif segment in self.dynamic_segments:
+            output += f"@{self.dynamic_segments[segment]}\n"
+            output += "D=M\n"
+            output += f"@{index}\n"
+            output += "A=D+A\n"
+            if is_pop:
+                output += "D=A\n"
+                output += "@R13\n" 
+                output += "M=D\n" 
+            else:
+                output += "D=M\n"
+
+        elif segment == 'pointer':
+            output += (f"@{self.pointer_dict[index]}\n")
+            if not is_pop:
+                output += ("D=M\n")
+            else:
+                output += "D=A\n"
+                output += "@R13\n" 
+                output += "M=D\n"
+        
+        elif segment == 'temp':
+            output += f"@{5 + index}\n"
+            if not is_pop:
+                output += "D=M\n"
+            else:
+                output += "D=A\n"
+                output += "@R13\n"
+                output += "M=D\n"
+        
+        return output
+
+
+    def write_push(self, segment: str, index: int) -> None:
+        
+        adress = self.write_push_pop_prefix(segment, index, is_pop=False)
+        self.output_stream.write(adress)
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M\n")
+        self.output_stream.write("M=D\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("M=M+1\n")
+
+
+    def write_pop(self, segment: str, index: int) -> None:
+
+        adress = (self.write_push_pop_prefix(segment, index, is_pop=True))
+        self.output_stream.write(adress)
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@R13\n")
+        self.output_stream.write("A=M\n")
+        self.output_stream.write("M=D\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("M=M-1\n")
 
     def write_push_pop(self, command: str, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the given 
@@ -63,12 +145,12 @@ class CodeWriter:
             segment (str): the memory segment to operate on.
             index (int): the index in the memory segment.
         """
-        # Your code goes here!
-        # Note: each reference to "static i" appearing in the file Xxx.vm should
-        # be translated to the assembly symbol "Xxx.i". In the subsequent
-        # assembly process, the Hack assembler will allocate these symbolic
-        # variables to the RAM, starting at address 16.
-        pass
+        if command == "C_PUSH":
+            self.write_push(segment, index)
+        elif command == "C_POP":
+            self.write_pop(segment, index)
+        else:
+            raise ValueError(f"Invalid command: {command}. Expected 'C_PUSH' or 'C_POP'.")
 
     def write_label(self, label: str) -> None:
         """Writes assembly code that affects the label command. 

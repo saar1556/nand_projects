@@ -46,16 +46,27 @@ class Parser:
       - return
     """
 
+    arithmetic_commands = {
+        'add', 'sub', 'and', 'or',
+        'eq', 'gt', 'lt', 'neg',
+        'not', 'shiftleft', 'shiftright'}
+
+    non_arithmetic_commands = {
+        'push':'C_PUSH', 'pop':'C_POP', 'label':'C_LABEL', 'if-goto':'C_IF',  
+        'goto':'C_GOTO', 'call':'C_CALL', 'function':'C_FUNCTION', 'return':'C_RETURN'}
+
     def __init__(self, input_file: typing.TextIO) -> None:
         """Gets ready to parse the input file.
 
         Args:
             input_file (typing.TextIO): input file.
         """
-        # Your code goes here!
-        # A good place to start is to read all the lines of the input:
-        # input_lines = input_file.read().splitlines()
-        pass
+        self.input_lines = []
+        for line in input_file.read().splitlines():
+            clean_line = line.split('//')[0].strip()
+            if clean_line:
+                self.input_lines.append(clean_line)
+        self.current_line = 0
 
     def has_more_commands(self) -> bool:
         """Are there more commands in the input?
@@ -63,16 +74,21 @@ class Parser:
         Returns:
             bool: True if there are more commands, False otherwise.
         """
-        # Your code goes here!
-        pass
+        if len(self.input_lines) == self.current_line:
+            return False
+        else:
+            return True
+
+    def reset(self) -> None:
+        self.current_line = 0
 
     def advance(self) -> None:
         """Reads the next command from the input and makes it the current 
         command. Should be called only if has_more_commands() is true. Initially
         there is no current command.
         """
-        # Your code goes here!
-        pass
+        self.current_command = self.input_lines[self.current_line]
+        self.current_line += 1
 
     def command_type(self) -> str:
         """
@@ -83,8 +99,13 @@ class Parser:
             "C_PUSH", "C_POP", "C_LABEL", "C_GOTO", "C_IF", "C_FUNCTION",
             "C_RETURN", "C_CALL".
         """
-        # Your code goes here!
-        pass
+        command = self.current_command.split()[0].strip()
+        if command in self.arithmetic_commands:
+            return "C_ARITHMETIC"
+        elif command in self.non_arithmetic_commands:
+            return self.non_arithmetic_commands[command]
+        else:
+            raise ValueError(f"Unknown command: {command}")
 
     def arg1(self) -> str:
         """
@@ -93,8 +114,11 @@ class Parser:
             "C_ARITHMETIC", the command itself (add, sub, etc.) is returned. 
             Should not be called if the current command is "C_RETURN".
         """
-        # Your code goes here!
-        pass
+        command_parts = self.current_command.split()
+        if len(command_parts) == 1:
+            return command_parts[0].strip()
+        else:
+            return command_parts[1].strip()
 
     def arg2(self) -> int:
         """
@@ -103,5 +127,4 @@ class Parser:
             called only if the current command is "C_PUSH", "C_POP", 
             "C_FUNCTION" or "C_CALL".
         """
-        # Your code goes here!
-        pass
+        return int(self.current_command.split()[2].strip())
