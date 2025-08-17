@@ -80,6 +80,11 @@ class Parser:
             return True
 
     def reset(self) -> None:
+        """
+        Resets the parser's internal state to the beginning of the input.
+        After calling this method, `advance()` will read the first command
+        in the file again.
+        """
         self.current_line = 0
 
     def advance(self) -> None:

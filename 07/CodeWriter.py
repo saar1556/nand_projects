@@ -6,6 +6,7 @@ as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
 Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 """
 import typing
+import os
 
 
 class CodeWriter:
@@ -22,7 +23,7 @@ class CodeWriter:
         """
         self.output_stream = output_stream
         self.file_name = None
-        
+        self.comp_counter = 0
 
     def set_file_name(self, filename: str) -> None:
         """Informs the code writer that the translation of a new VM file is 
@@ -31,19 +32,89 @@ class CodeWriter:
         Args:
             filename (str): The name of the VM file.
         """
-        # Your code goes here!
-        # This function is useful when translating code that handles the
-        # static segment. For example, in order to prevent collisions between two
-        # .vm files which push/pop to the static segment, one can use the current
-        # file's name in the assembly variable's name and thus differentiate between
-        # static variables belonging to different files.
-        # To avoid problems with Linux/Windows/MacOS differences with regards
-        # to filenames and paths, you are advised to parse the filename in
-        # the function "translate_file" in Main.py using python's os library,
-        # For example, using code similar to:
-        # input_filename, input_extension = os.path.splitext(os.path.basename(input_file.name))
-        self.file_name = filename
+        self.file_name = os.path.splitext(os.path.basename(filename))[0].strip()
 
+
+    def write_add_sub(self, command: str) -> str:
+        """Generates Hack assembly code for the add or sub arithmetic commands.
+
+        Args:
+            command (str): 'add' or 'sub'.
+
+        Returns:
+            str: The assembly code for the command.
+        """
+        if command == 'add':
+            return "M=M+D\n"
+        else:
+            return "M=M-D\n"
+            
+
+    def write_compare(self, command: str) -> str:
+        """Generates Hack assembly code for comparison commands (eq, gt, lt).
+
+        This code pops the top two values from the stack, compares them, and
+        pushes -1 (true) or 0 (false) back onto the stack. It uses a unique 
+        label to handle the branching logic.
+
+        Args:
+            command (str): 'eq', 'gt', or 'lt'.
+
+        Returns:
+            str: The assembly code for the command.
+        """
+        if command == 'eq':
+            jump = 'JEQ'
+        elif command == 'gt':
+            jump = 'JGT'
+        elif command == 'lt':
+            jump = 'JLT'
+        
+        output = "D=M-D\n"
+        output += f"@{command.upper()}_{self.comp_counter}\n"
+        output += f"D;{jump}\n"
+        output += f"(NOT_{command.upper()}_{self.comp_counter})\n"
+        output += "@SP\n"
+        output += "A=M\n"
+        output += "M=0\n"
+        output += f"@{command.upper()}_{self.comp_counter}_END\n"
+        output += "0;JMP\n"
+        output += f"({command.upper()}_{self.comp_counter})\n"
+        output += "@SP\n"
+        output += "A=M\n"
+        output += "M=-1\n"
+        output += f"({command.upper()}_{self.comp_counter}_END)\n"
+        
+        self.comp_counter += 1
+        return output
+
+    def write_and_or(self, command: str) -> str:
+        """Generates Hack assembly code for the bitwise and or or commands.
+
+        Args:
+            command (str): 'and' or 'or'.
+
+        Returns:
+            str: The assembly code for the command.
+        """
+        if command == 'and':
+            return "M=M&D\n"
+        else:
+            return "M=M|D\n"
+
+    def write_not_neg(self, command: str) -> str:
+        """Generates Hack assembly code for the unary not or neg commands.
+
+        Args:
+            command (str): 'not' or 'neg'.
+
+        Returns:
+            str: The assembly code for the command.
+        """
+        if command == 'not':
+            return "M=!M\n"
+        else:
+            return "M=-M\n"
 
     def write_arithmetic(self, command: str) -> None:
         """Writes assembly code that is the translation of the given 
@@ -53,21 +124,49 @@ class CodeWriter:
 
         Args:
             command (str): an arithmetic command.
-        """segment: str, index: int
-        # Your code goes here!
-        pass
+        """
+
+        self.output_stream.write("@SP\n")
+        if command in {'not', 'neg'}:
+            self.output_stream.write("A=M-1\n")
+            self.output_stream.write(self.write_not_neg(command))
+            return
+        self.output_stream.write("M=M-1\n")
+        self.output_stream.write("A=M\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("M=M-1\n")
+        self.output_stream.write("A=M\n")
+        if command in {'add', 'sub'}:
+            self.output_stream.write(self.write_add_sub(command))
+        elif command in {'eq', 'gt', 'lt'}:
+            self.output_stream.write(self.write_compare(command))
+        elif command in {'and', 'or'}:
+            self.output_stream.write(self.write_and_or(command))
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("M=M+1\n")
+        
 
     def write_push_pop_prefix(self, segment: str, index: int, is_pop: bool) -> str:
-        """
-        Generates the assembly code to calculate the target address for push/pop.
-        """
+        """Generates the Hack assembly code for address calculation in push/pop commands.
 
+        This function calculates the correct memory address based on the segment and index. 
+        It handles all memory segments including dynamic, static, pointer, temp, and constant.
+
+        Args:
+            segment (str): The name of the memory segment (e.g., 'local', 'static', 'temp').
+            index (int): The index within the memory segment.
+            is_pop (bool): A flag indicating if the operation is a 'pop'.
+
+        Returns:
+            str: A string containing the assembly code to set up the address.
+        """
         output = ""
 
         if segment == 'constant':
             output += f"@{index}\n"
-        if not is_pop:
-            output += "D=A\n"
+            if not is_pop:
+                output += "D=A\n"
 
         elif segment == 'static':
             static_var = f"{self.file_name}.{index}"
@@ -113,9 +212,17 @@ class CodeWriter:
 
 
     def write_push(self, segment: str, index: int) -> None:
-        
-        adress = self.write_push_pop_prefix(segment, index, is_pop=False)
-        self.output_stream.write(adress)
+        """Writes assembly code that is the translation of the push command.
+
+        It calculates the memory address based on the segment and index and 
+        pushes the value at that address onto the stack.
+
+        Args:
+            segment (str): the memory segment to push from.
+            index (int): the index in the memory segment.
+        """
+        address = self.write_push_pop_prefix(segment, index, is_pop=False)
+        self.output_stream.write(address)
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M\n")
         self.output_stream.write("M=D\n")
@@ -124,9 +231,17 @@ class CodeWriter:
 
 
     def write_pop(self, segment: str, index: int) -> None:
+        """Writes assembly code that is the translation of the pop command.
 
-        adress = (self.write_push_pop_prefix(segment, index, is_pop=True))
-        self.output_stream.write(adress)
+        It pops a value from the stack and stores it at the memory address 
+        determined by the segment and index.
+
+        Args:
+            segment (str): the memory segment to pop to.
+            index (int): the index in the memory segment.
+        """
+        address = (self.write_push_pop_prefix(segment, index, is_pop=True))
+        self.output_stream.write(address)
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M-1\n")
         self.output_stream.write("D=M\n")
