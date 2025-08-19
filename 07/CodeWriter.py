@@ -23,7 +23,9 @@ class CodeWriter:
         """
         self.output_stream = output_stream
         self.file_name = None
+        self.current_function_name = None
         self.comp_counter = 0
+        self.call_counter = 0
 
     def set_file_name(self, filename: str) -> None:
         """Informs the code writer that the translation of a new VM file is 
@@ -278,9 +280,7 @@ class CodeWriter:
         Args:
             label (str): the label to write.
         """
-        # This is irrelevant for project 7,
-        # you will implement this in project 8!
-        pass
+        self.output_stream.write(f"({self.current_function_name}${label})\n")
     
     def write_goto(self, label: str) -> None:
         """Writes assembly code that affects the goto command.
@@ -288,9 +288,8 @@ class CodeWriter:
         Args:
             label (str): the label to go to.
         """
-        # This is irrelevant for project 7,
-        # you will implement this in project 8!
-        pass
+        self.output_stream.write(f"@{self.current_function_name}${label}\n")
+        self.output_stream.write("0;JMP\n")
     
     def write_if(self, label: str) -> None:
         """Writes assembly code that affects the if-goto command. 
@@ -298,9 +297,12 @@ class CodeWriter:
         Args:
             label (str): the label to go to.
         """
-        # This is irrelevant for project 7,
-        # you will implement this in project 8!
-        pass
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write(f"@{self.current_function_name}${label}\n")
+        self.output_stream.write("D;JNE\n")
+        
     
     def write_function(self, function_name: str, n_vars: int) -> None:
         """Writes assembly code that affects the function command. 
@@ -338,19 +340,51 @@ class CodeWriter:
             function_name (str): the name of the function to call.
             n_args (int): the number of arguments of the function.
         """
-        # This is irrelevant for project 7,
-        # you will implement this in project 8!
-        # The pseudo-code of "call function_name n_args" is:
-        # push return_address   // generates a label and pushes it to the stack
-        # push LCL              // saves LCL of the caller
-        # push ARG              // saves ARG of the caller
-        # push THIS             // saves THIS of the caller
-        # push THAT             // saves THAT of the caller
-        # ARG = SP-5-n_args     // repositions ARG
-        # LCL = SP              // repositions LCL
-        # goto function_name    // transfers control to the callee
-        # (return_address)      // injects the return address label into the code
-        pass
+
+        # push return_address
+        self.output_stream.write(f"@{function_name}$ret.{self.call_counter}\n")
+        self.output_stream.write("D=A\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M\n")
+        self.output_stream.write("M=D\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("M=M+1\n")
+
+        # push LCL, ARG, THIS, THAT
+        for arg in {"LCL", "ARG", "THIS", "THAT"}:
+            self.output_stream.write(f"@{arg}\n")
+            self.output_stream.write("D=M\n")
+            self.output_stream.write("@SP\n")
+            self.output_stream.write("A=M\n")
+            self.output_stream.write("M=D\n")
+            self.output_stream.write("@SP\n")
+            self.output_stream.write("M=M+1\n")
+
+        # ARG = SP-5-n_args
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write(f"@{n_args+5}\n")
+        self.output_stream.write("D=D-A\n")
+        self.output_stream.write("@ARG\n")
+        self.output_stream.write("M=D")
+
+        # LCL = SP
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@LCL\n")
+        self.output_stream.write("M=D\n")
+
+        # goto function_name
+        self.output_stream.write(f"@{function_name}\n")
+        self.output_stream.write("0;JMP\n")
+
+        # (return_address)
+        self.output_stream.write(f"({function_name}$ret.{self.call_counter})\n")
+
+        self.call_counter += 1
+        return
+
+
     
     def write_return(self) -> None:
         """Writes assembly code that affects the return command."""
