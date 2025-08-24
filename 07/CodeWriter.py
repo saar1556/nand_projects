@@ -280,7 +280,10 @@ class CodeWriter:
         Args:
             label (str): the label to write.
         """
-        self.output_stream.write(f"({self.current_function_name}${label})\n")
+        if self.current_function_name:
+            self.output_stream.write(f"({self.current_function_name}${label})\n")
+        else:
+            self.output_stream.write(f"({self.file_name}${label})\n")
     
     def write_goto(self, label: str) -> None:
         """Writes assembly code that affects the goto command.
@@ -316,14 +319,16 @@ class CodeWriter:
             function_name (str): the name of the function.
             n_vars (int): the number of local variables of the function.
         """
-        # This is irrelevant for project 7,
-        # you will implement this in project 8!
-        # The pseudo-code of "function function_name n_vars" is:
-        # (function_name)       // injects a function entry label into the code
-        # repeat n_vars times:  // n_vars = number of local variables
-        #   push constant 0     // initializes the local variables to 0
-        pass
+        self.current_function_name = function_name
+
+        # (function_name)
+        self.output_stream.write(f"({function_name})\n")
+
+        # push constant 0 n_vars times
+        for i in range(n_vars):
+            self.write_push("constant", 0)
     
+
     def write_call(self, function_name: str, n_args: int) -> None:
         """Writes assembly code that affects the call command. 
         Let "Xxx.foo" be a function within the file Xxx.vm.
@@ -384,20 +389,50 @@ class CodeWriter:
         self.call_counter += 1
         return
 
-
     
     def write_return(self) -> None:
         """Writes assembly code that affects the return command."""
-        # This is irrelevant for project 7,
-        # you will implement this in project 8!
-        # The pseudo-code of "return" is:
-        # frame = LCL                   // frame is a temporary variable
-        # return_address = *(frame-5)   // puts the return address in a temp var
-        # *ARG = pop()                  // repositions the return value for the caller
-        # SP = ARG + 1                  // repositions SP for the caller
-        # THAT = *(frame-1)             // restores THAT for the caller
-        # THIS = *(frame-2)             // restores THIS for the caller
-        # ARG = *(frame-3)              // restores ARG for the caller
-        # LCL = *(frame-4)              // restores LCL for the caller
-        # goto return_address           // go to the return address
-        pass
+
+        # frame = LCL 
+        self.output_stream.write("@LCL\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@R13\n") 
+        self.output_stream.write("M=D\n")
+        
+        # return_address = *(frame-5)
+        self.output_stream.write("@R13\n") 
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@5\n")
+        self.output_stream.write("A=D-A\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@R14\n")
+        self.output_stream.write("M=D\n")
+
+        # *ARG = pop()
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("AM=M-1\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@ARG\n")
+        self.output_stream.write("A=M\n")
+        self.output_stream.write("M=D\n")
+
+        # SP = ARG + 1
+        self.output_stream.write("@ARG\n")
+        self.output_stream.write("D=M+1\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("M=D\n")
+
+        # THAT = *(frame-1), THIS = *(frame-2), ARG = *(frame-3), LCL = *(frame-4)
+        for address, val in {"THAT":1, "THIS":2, "ARG":3, "LCL":4}.items():
+            self.output_stream.write("@R13\n")
+            self.output_stream.write("D=M\n")
+            self.output_stream.write(f"@{val}\n")
+            self.output_stream.write("A=D-A\n")
+            self.output_stream.write("D=M\n")
+            self.output_stream.write(f"@{address}\n")
+            self.output_stream.write("M=D\n")
+
+        # goto return_address
+        self.output_stream.write("@R14\n")
+        self.output_stream.write("A=M\n")
+        self.output_stream.write("0;JMP\n")

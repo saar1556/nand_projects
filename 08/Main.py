@@ -23,8 +23,59 @@ def translate_file(
         bootstrap (bool): if this is True, the current file is the 
             first file we are translating.
     """
-    # Your code goes here!
-    pass
+    parser = Parser(input_file)
+    code_writer = CodeWriter(output_file)
+    filename = input_file.name
+    code_writer.set_file_name(filename)
+
+    if bootstrap:
+
+        # set SP to 256
+        code_writer.output_stream.write("@256\n")
+        code_writer.output_stream.write("D=A\n")
+        code_writer.output_stream.write("@SP\n")
+        code_writer.output_stream.write("M=D\n")
+
+        # call(Sys.init)
+        code_writer.write_call("Sys.init", 0)
+
+    while parser.has_more_commands():
+        parser.advance()
+        command_type = parser.command_type()
+
+        if command_type == "C_ARITHMETIC":
+            command = parser.arg1()
+            code_writer.write_arithmetic(command)
+
+        elif command_type in {"C_PUSH", "C_POP"}:
+            segment = parser.arg1()
+            index = parser.arg2()
+            code_writer.write_push_pop(command_type, segment, index)
+
+        elif command_type == "C_LABEL":
+            label = parser.arg1()
+            code_writer.write_label(label)
+
+        elif command_type == "C_GOTO":
+            address = parser.arg1()
+            code_writer.write_goto(address)
+        
+        elif command_type == "C_IF":
+            address = parser.arg1()
+            code_writer.write_if(address)
+
+        elif command_type == "C_CALL":
+            function_name = parser.arg1()
+            n_args = parser.arg2()
+            code_writer.write_call(function_name, n_args)
+
+        elif command_type == "C_FUNCTION":
+            function_name = parser.arg1()
+            n_vars = parser.arg2()
+            code_writer.write_function(function_name, n_vars)
+
+        elif command_type == "C_RETURN":
+            code_writer.write_return()
 
 
 if "__main__" == __name__:

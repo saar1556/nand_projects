@@ -67,6 +67,7 @@ class Parser:
             if clean_line:
                 self.input_lines.append(clean_line)
         self.current_line = 0
+        self.current_command =None
 
     def has_more_commands(self) -> bool:
         """Are there more commands in the input?
