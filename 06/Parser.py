@@ -11,10 +11,11 @@ import typing
 class Parser:
     """Encapsulates access to the input code. Reads an assembly program
     by reading each command line-by-line, parses the current command,
-    and provides convenient access to the commands components (fields
+    and provides convenient access to the command's components (fields
     and symbols). In addition, removes all white space and comments.
     """
-    input_lines: list[str]
+    instructions: list[str]
+    current_line: int
     current_command: str
 
     def __init__(self, input_file: typing.TextIO) -> None:
@@ -23,12 +24,18 @@ class Parser:
         Args:
             input_file (typing.TextIO): input file.
         """
-        self.input_lines = []
-        for line in input_file.read().splitlines():
-            clean_line = line.split('//')[0].strip()
-            if clean_line:
-                self.input_lines.append(clean_line)
+        self.instructions = []
+
+        for raw in input_file.read().splitlines():
+            line = raw.split("//", 1)[0]
+            line = line.replace("\u00A0", " ").expandtabs().strip()
+            if not line:
+                continue
+            self.instructions.append(line)
+
         self.current_line = 0
+        self.current_command = self.instructions[0] if self.instructions else ""
+
 
     def has_more_commands(self) -> bool:
         """Are there more commands in the input?
@@ -36,24 +43,24 @@ class Parser:
         Returns:
             bool: True if there are more commands, False otherwise.
         """
-        if len(self.input_lines) == self.current_line:
-            return False
-        else:
-            return True
+        return self.current_line + 1 < len(self.instructions) 
 
     def reset(self) -> None:
-        self.current_line = 0
+        """Resets the parser to the beginning of the input."""
+        self.current_line = -1
+        self.current_command = ""
 
     def advance(self) -> None:
         """Reads the next command from the input and makes it the current command.
         Should be called only if has_more_commands() is true.
         """
-        self.current_command = self.input_lines[self.current_line]
-        self.current_line += 1
-        
+        if self.has_more_commands():
+            self.current_line += 1
+            self.current_command = self.instructions[self.current_line]
 
     def command_type(self) -> str:
-        """
+        """Returns the type of the current command.
+
         Returns:
             str: the type of the current command:
             "A_COMMAND" for @Xxx where Xxx is either a symbol or a decimal number
@@ -62,18 +69,19 @@ class Parser:
         """
         if self.current_command.startswith('@'):
             return "A_COMMAND"
-        elif self.current_command.startswith('('):
+        elif self.current_command.startswith('(') and self.current_command.endswith(')'):
             return "L_COMMAND"
         else:
             return "C_COMMAND"
-        
 
     def symbol(self) -> str:
-        """
+        """Returns the symbol or decimal Xxx of the current command.
+
+        For @Xxx (A_COMMAND) returns "Xxx".
+        For (Xxx) (L_COMMAND) returns "Xxx".
+
         Returns:
-            str: the symbol or decimal Xxx of the current command @Xxx or
-            (Xxx). Should be called only when command_type() is "A_COMMAND" or 
-            "L_COMMAND".
+            str: the symbol or decimal of the current command.
         """
         if self.command_type() == "A_COMMAND":
             return self.current_command[1:]
@@ -83,38 +91,40 @@ class Parser:
             raise ValueError("symbol() should only be called for A_COMMAND or L_COMMAND")
 
     def dest(self) -> str:
-        """
+        """Returns the dest mnemonic in the current C-command.
+
         Returns:
-            str: the dest mnemonic in the current C-command. Should be called 
-            only when commandType() is "C_COMMAND".
+            str: the dest mnemonic, or "null" if no dest is present.
         """
-        if '=' in self.current_command:
-            return self.current_command.split('=')[0].strip()
-        else:
-            return 'null'
+        if self.command_type() != "C_COMMAND":
+            raise ValueError("dest() should only be called for C_COMMAND")
+        return self.current_command.split('=', 1)[0].strip() if '=' in self.current_command else 'null'
 
     def comp(self) -> str:
-        """
+        """Returns the comp mnemonic in the current C-command.
+
         Returns:
-            str: the comp mnemonic in the current C-command. Should be called 
-            only when commandType() is "C_COMMAND".
+            str: the comp mnemonic of the command.
         """
+        if self.command_type() != "C_COMMAND":
+            raise ValueError("comp() should only be called for C_COMMAND")
+
         if ';' in self.current_command:
-            comp_part = self.current_command.split(';')[0].strip()
+            comp_part = self.current_command.split(';', 1)[0].strip()
         else:
             comp_part = self.current_command
+
         if '=' in comp_part:
-            return comp_part.split('=')[1].strip()
+            return comp_part.split('=', 1)[1].strip()
         else:
             return comp_part.strip()
 
     def jump(self) -> str:
-        """
+        """Returns the jump mnemonic in the current C-command.
+
         Returns:
-            str: the jump mnemonic in the current C-command. Should be called 
-            only when commandType() is "C_COMMAND".
+            str: the jump mnemonic, or "null" if no jump is present.
         """
-        if ';' in self.current_command:
-            return self.current_command.split(';')[1].strip()
-        else:
-            return 'null'
+        if self.command_type() != "C_COMMAND":
+            raise ValueError("jump() should only be called for C_COMMAND")
+        return self.current_command.split(';', 1)[1].strip() if ';' in self.current_command else 'null'
