@@ -1,15 +1,53 @@
-// This file is part of nand2tetris, as taught in The Hebrew University, and
-// was written by Aviv Yaish. It is an extension to the specifications given
-// [here](https://www.nand2tetris.org) (Shimon Schocken and Noam Nisan, 2017),
-// as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
-// Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 
-/**
-  * In Jack programs, the first function that runs is always the function "main"
-  * from the class "Main".
-  * You can include as many classes and functions as you want.
-  */
+/** 
+ * This Jack program is a basic, keyboard-controlled drawing application for the Hack computer.
+ * Its core functionality is distributed across a few key classes,
+ * ensuring a clear separation of responsibilities.
+ *
+ * Main Class:
+ *     Manages the application's central loop. It initializes the screen, 
+ *     creates and coordinates the Pen and ToolsControl objects, and handles all keyboard input.
+ * 
+ * Pen Class:
+ *     Represents the user's cursor or drawing tool. It handles all movement (up, down, left, right),
+ *     manages its own state (position and size), and can be set to draw or erase on the screen.
+ *     In shape-drawing mode, the Pen acts as a simple cursor for selecting points rather than a drawing tool.
+ *
+ * ToolsControl Class:
+ *     Manages the graphical user interface (GUI).
+ *     It draws the toolbar at the bottom of the screen and controls the application's drawing modes.
+ *     A key feature is its ability to display instructions by saving a portion of the screen
+ *     to memory and then restoring it, ensuring the user's work isn't lost.
+ *
+ * Shape Class:
+ *     A static utility class that provides drawing services for geometric shapes (rectangles, circles, triangles). 
+ *     It is stateless, taking coordinates from the Main class and drawing the final shape
+ *     on the screen using a series of lines.
+ *
+ * Optional Extension: The Undo Feature
+ *     An advanced extension to this program would be to implement an Undo feature.
+ *     This requires a separate class to manage a limited history of drawing actions.
+ *     Instead of saving the entire screen, which is memory-intensive, the Undo class uses a small,
+ *     fixed-size buffer to capture the deltas—the specific pixels and their original colors—that
+ *     are about to change. When a user performs an undo action, the program restores the pixels from
+ *     the buffer to their previous state. This approach is both memory-efficient and fast,
+ *     as it only manipulates the pixels that were actually changed.
+
 class Main {
+
+
+  /**
+  * The main function of the program. It initializes the drawing application,
+  * creates the necessary objects for the pen and the toolbar, and enters the
+  * main drawing loop. The function is responsible for the overall program flow,
+  * handling user input, updating the pen's state, and managing the drawing and
+  * erasing actions.
+  *
+  * The main function first initializes the screen and then draws the permanent
+  * UI elements. This includes the separator line that divides the drawing
+  * canvas from the toolbar. It then enters a loop that listens for keyboard
+  * input to control the application.
+  */
   function void main() {
     // Your code goes here!
     return;

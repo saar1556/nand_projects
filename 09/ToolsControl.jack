@@ -1,0 +1,97 @@
+/**
+ *  methods list:
+ *
+ *  constructor()
+ *  draw()
+ *  change_mode()
+ *  showInstructions()
+ *  hideInstructions()
+ *  updateSize()
+ *
+ *  Array moods : [pen, eraser, square, circle, triangle]
+ */
+
+
+
+/**
+ * The ToolsControl class is responsible for managing the graphical user interface (GUI) of the drawing application,
+ * specifically the toolbar and the instructions displayed to the user. This class handles the selection of different
+ * drawing modes (like pen, eraser, etc.) and is also responsible for the temporary display of instructions,
+ * including saving and restoring the canvas's state from memory.
+ *
+ * The toolbar is drawn at the bottom of the screen, occupying the area from y-coordinate 220 to 255.
+ * The drawing canvas area for the user is therefore limited to the space above the toolbar.
+ *
+ * @field currentMode: Holds an integer representing the currently selected drawing mode.
+ * @field modes: A static array that holds the available drawing modes.
+ * @field screenBuffer: A temporary memory buffer used to store a portion of the screen
+ * when instructions are displayed, to allow for later restoration.
+ */
+class ToolsControl {
+
+    let static int instructionsWidth =  ### ; // width of the text area
+    let static int instructionsHeight = ### ; // height of the text area
+    let static int instructionsBufferSize = (### * ###) / 16; // Memory needed
+    field int currentMode;
+    field Array modes;
+    field Array screenBuffer;
+
+    /**
+     * Constructs a new ToolsControl object and initializes the toolbar state.
+     * This constructor should not draw anything on the screen.
+     */
+    constructor ToolsControl() {
+    }
+
+    /**
+     * Draws the entire toolbar interface, including mode icons and labels.
+     * This method should be called once after the object is constructed.
+     */
+    method void draw() {
+    }
+
+    /**
+     * Saves the portion of the drawing canvas that will be overwritten by instructions
+     * into a temporary memory buffer.
+     */
+    method void showInstructions() {
+        let screenBuffer = Memory.alloc(ToolsControl.instructionsBufferSize);
+        // ... copy screen content
+        // ... display instructions
+        return;
+    }
+
+    /* Restores the drawing canvas from the temporary buffer. */
+    method void hideInstructions() {
+        // ... copy buffer content to screen
+        do Memory.deAlloc(screenBuffer);
+        return;
+    }
+
+
+    /**
+     * Selects and highlights a new drawing mode. This method should erase
+     * the highlight from the previous mode and draw a new highlight around
+     * the selected mode's icon.
+     *
+     * @param newMode The integer representing the new mode to select.
+     */
+    method void change_mode(int newMode) {
+    }
+
+    /**
+     * Updates the size display on the toolbar.
+     *
+     * @param newSize The new integer value to display for the pen/shape size.
+     */
+    method void updateSize(int newSize) {
+    }
+
+    /**
+     * Disposes this ToolsControl object and its resources.
+     * This method must be called explicitly when the object is no longer needed.
+     */
+    method void dispose() {
+    }
+
+}

@@ -1,0 +1,46 @@
+
+/**
+ *  functions list:
+ *
+ *  draw_rectangle()
+ *  draw_rectangle_outline()
+ *  draw_circle()
+ *  draw_circle_outline()
+ *  draw_triangle()
+ *  draw_triangle_outline()
+ */
+
+
+/**
+ * The Shape class provides static methods for drawing various shapes
+ * (rectangles, circles, and triangles) on the screen. This class acts as a
+ * utility library and does not maintain its own state. All drawing is based
+ * on the parameters provided to its methods.
+ */
+class shapes {
+    
+    /* Draws a filled rectangle on the screen, defined by two opposite corners. */
+    function void draw_rectangle (int x1, int y1, int x2, int y2) {
+    }
+
+    /* Draws the outline of a rectangle. */
+    function void draw_rectangle_outline (int x1, int y1, int x2, int y2) {
+    }
+
+    /* Draws a filled circle on the screen, defined by a bounding box. */
+    function void draw_circle (int x1, int y1, int x2, int y2) {
+    }
+
+    /* Draws the outline of a circle. */
+    function void draw_circle_outline (int x1, int y1, int x2, int y2) {
+    }
+
+    /* Draws a filled triangle, defined by its three vertices. */
+    function void draw_triangle (int x1, int y1, int x2, int y2, int x3, int y3) {
+    }
+
+    /* Draws the outline of a triangle. */
+    function void draw_triangle_outline (int x1, int y1, int x2, int y2, int x3, int y3) {
+    }
+
+ }
