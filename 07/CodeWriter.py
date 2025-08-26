@@ -133,12 +133,10 @@ class CodeWriter:
             self.output_stream.write("A=M-1\n")
             self.output_stream.write(self.write_not_neg(command))
             return
-        self.output_stream.write("M=M-1\n")
-        self.output_stream.write("A=M\n")
+        self.output_stream.write("AM=M-1\n")
         self.output_stream.write("D=M\n")
         self.output_stream.write("@SP\n")
-        self.output_stream.write("M=M-1\n")
-        self.output_stream.write("A=M\n")
+        self.output_stream.write("AM=M-1\n")
         if command in {'add', 'sub'}:
             self.output_stream.write(self.write_add_sub(command))
         elif command in {'eq', 'gt', 'lt'}:
@@ -245,7 +243,7 @@ class CodeWriter:
         address = (self.write_push_pop_prefix(segment, index, is_pop=True))
         self.output_stream.write(address)
         self.output_stream.write("@SP\n")
-        self.output_stream.write("A=M-1\n")
+        self.output_stream.write("AM=M-1\n")
         self.output_stream.write("D=M\n")
         self.output_stream.write("@R13\n")
         self.output_stream.write("A=M\n")
@@ -371,7 +369,7 @@ class CodeWriter:
         self.output_stream.write(f"@{n_args+5}\n")
         self.output_stream.write("D=D-A\n")
         self.output_stream.write("@ARG\n")
-        self.output_stream.write("M=D")
+        self.output_stream.write("M=D\n")
 
         # LCL = SP
         self.output_stream.write("@SP\n")
@@ -423,7 +421,7 @@ class CodeWriter:
         self.output_stream.write("M=D\n")
 
         # THAT = *(frame-1), THIS = *(frame-2), ARG = *(frame-3), LCL = *(frame-4)
-        for address, val in {"THAT":1, "THIS":2, "ARG":3, "LCL":4}.items():
+        for address, val in [("THAT",1), ("THIS",2), ("ARG",3), ("LCL",4)]:
             self.output_stream.write("@R13\n")
             self.output_stream.write("D=M\n")
             self.output_stream.write(f"@{val}\n")
