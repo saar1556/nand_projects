@@ -22,8 +22,7 @@ def translate_file(
     """
     parser = Parser(input_file)
     code_writer = CodeWriter(output_file)
-    filename = input_file.name
-    code_writer.set_file_name(filename)
+    code_writer.set_file_name(input_file.name)
 
     while parser.has_more_commands():
         parser.advance()
