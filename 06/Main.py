@@ -19,32 +19,31 @@ def first_pass(parser: Parser, symbol_table: SymbolTable) -> None:
     Args:
         parser (Parser): the parser to read commands from.
         symbol_table (SymbolTable): the symbol table to populate.
-    """
-    current_line_number = 0
-
+    """    
+    parser.reset()
+    rom_address = 0
     while parser.has_more_commands():
         parser.advance()
-        command_type = parser.command_type()
-
-        if command_type == "L_COMMAND":
+        ct = parser.command_type()
+        if ct == "L_COMMAND":
             symbol = parser.symbol()
             if not symbol_table.contains(symbol):
-                symbol_table.add_entry(symbol, current_line_number)
+                symbol_table.add_entry(symbol, rom_address)
         else:
-            current_line_number += 1
+            rom_address += 1
     parser.reset()
+
+
+FIRST_VARIABLE_ADDRESS = 16
 
 def second_pass(parser: Parser, symbol_table: SymbolTable, output_file: typing.TextIO) -> None:
 
-    current_variable_address = 16
+    current_variable_address = FIRST_VARIABLE_ADDRESS
 
     while parser.has_more_commands():
         parser.advance()
         output_command = ""
         command_type = parser.command_type()
-
-        if command_type == "L_COMMAND":
-            continue
 
         if command_type == "A_COMMAND":
             symbol = parser.symbol()
@@ -56,20 +55,13 @@ def second_pass(parser: Parser, symbol_table: SymbolTable, output_file: typing.T
                     current_variable_address += 1
                 address = symbol_table.get_address(symbol)
                 output_command = f"{address:016b}"
-
         elif command_type == "C_COMMAND":
-            dest = parser.dest()
-            comp = parser.comp()
-            jump = parser.jump()
-            a = Code.comp(comp)
-            b = Code.dest(dest)
-            c = Code.jump(jump)
-            output_command = (
-                a +
-                b +
-                c
-            )
-        output_file.write(output_command + "\n") 
+            dest,comp,jump = parser.dest(),parser.comp(),parser.jump()
+            output_command = (Code.comp(comp) + Code.dest(dest) + Code.jump(jump))
+
+        if output_command != "": 
+            output_file.write(output_command + "\n") 
+       
     output_file.flush()
 
 def assemble_file(

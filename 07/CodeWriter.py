@@ -15,6 +15,12 @@ class CodeWriter:
     dynamic_segments = {'local':'LCL', 'argument':'ARG', 'this':'THIS', 'that':'THAT'}
     pointer_dict = {0:'THIS', 1:'THAT'}
 
+    output_stream: typing.TextIO
+    file_name: str
+    current_function_name: str
+    comp_counter: int
+    call_counter: int
+
     def __init__(self, output_stream: typing.TextIO) -> None:
         """Initializes the CodeWriter.
 
@@ -22,8 +28,8 @@ class CodeWriter:
             output_stream (typing.TextIO): output stream.
         """
         self.output_stream = output_stream
-        self.file_name = None
-        self.current_function_name = None
+        self.file_name = ""
+        self.current_function_name = ""
         self.comp_counter = 0
         self.call_counter = 0
 
@@ -35,7 +41,6 @@ class CodeWriter:
             filename (str): The name of the VM file.
         """
         self.file_name = os.path.splitext(os.path.basename(filename))[0].strip()
-
 
     def write_add_sub(self, command: str) -> str:
         """Generates Hack assembly code for the add or sub arithmetic commands.
@@ -51,7 +56,6 @@ class CodeWriter:
         else:
             return "M=M-D\n"
             
-
     def write_compare(self, command: str) -> str:
         """Generates Hack assembly code for comparison commands (eq, gt, lt).
 
@@ -133,6 +137,7 @@ class CodeWriter:
             self.output_stream.write("A=M-1\n")
             self.output_stream.write(self.write_not_neg(command))
             return
+        
         self.output_stream.write("AM=M-1\n")
         self.output_stream.write("D=M\n")
         self.output_stream.write("@SP\n")
@@ -146,7 +151,6 @@ class CodeWriter:
         self.output_stream.write("@SP\n")
         self.output_stream.write("M=M+1\n")
         
-
     def write_push_pop_prefix(self, segment: str, index: int, is_pop: bool) -> str:
         """Generates the Hack assembly code for address calculation in push/pop commands.
 
@@ -161,6 +165,7 @@ class CodeWriter:
         Returns:
             str: A string containing the assembly code to set up the address.
         """
+        # whenever an address is being kept at R13, it is later being extracted in the pop method
         output = ""
 
         if segment == 'constant':
@@ -210,7 +215,6 @@ class CodeWriter:
         
         return output
 
-
     def write_push(self, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the push command.
 
@@ -228,7 +232,6 @@ class CodeWriter:
         self.output_stream.write("M=D\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("M=M+1\n")
-
 
     def write_pop(self, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the pop command.
@@ -248,8 +251,8 @@ class CodeWriter:
         self.output_stream.write("@R13\n")
         self.output_stream.write("A=M\n")
         self.output_stream.write("M=D\n")
-        self.output_stream.write("@SP\n")
-        self.output_stream.write("M=M-1\n")
+        # self.output_stream.write("@SP\n")
+        # self.output_stream.write("M=M-1\n")
 
     def write_push_pop(self, command: str, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the given 
@@ -303,8 +306,7 @@ class CodeWriter:
         self.output_stream.write("D=M\n")
         self.output_stream.write(f"@{self.current_function_name}${label}\n")
         self.output_stream.write("D;JNE\n")
-        
-    
+         
     def write_function(self, function_name: str, n_vars: int) -> None:
         """Writes assembly code that affects the function command. 
         The handling of each "function Xxx.foo" command within the file Xxx.vm
@@ -326,7 +328,6 @@ class CodeWriter:
         for i in range(n_vars):
             self.write_push("constant", 0)
     
-
     def write_call(self, function_name: str, n_args: int) -> None:
         """Writes assembly code that affects the call command. 
         Let "Xxx.foo" be a function within the file Xxx.vm.
@@ -386,8 +387,7 @@ class CodeWriter:
 
         self.call_counter += 1
         return
-
-    
+   
     def write_return(self) -> None:
         """Writes assembly code that affects the return command."""
 
