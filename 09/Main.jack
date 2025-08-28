@@ -51,13 +51,15 @@ class Main {
   */
 
   function void main() {
-    var Pen pen;
+    //var Pen pen;
 
     /* Initialize pen at position (0, 0) with width 16 */
-    let pen = Pen.new(0, 0, 16);
+    //let pen = Pen.new(0, 0, 16);
 
     /* Draw pen initially */
-    do pen.drawPen();
+    //do pen.drawPen();
+    do Screen.setColor(true);
+    do Screen.drawRectangle(10, 10, 20, 20);
 
     return;
   }
