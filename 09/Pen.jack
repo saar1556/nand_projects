@@ -41,6 +41,7 @@ class Pen {
     field int x, y; // screen location of the pointer's top-left corner
     field int width; // line width in pixels
     field boolean isDrawingMode; // Indicates if the pen is in drawing (true) or erasing (false) mode 
+    field boolean color;
     field Array backgroundBuffer;
 
 
@@ -58,10 +59,12 @@ class Pen {
         let minWidth = 1;
         let maxWidth = 20;
         let SCREEN = 16384;
+
         let x = Ax;
         let y = Ay;
         let width = Awidth;
         let isDrawingMode = false;
+        let color = true;
 
         // Allocate backgroundBuffer to save screen area under the pen.
         // Each word = 16 pixels; add 15 to ensure ceiling division.
@@ -120,7 +123,7 @@ class Pen {
     }
     
 
-    /** Erases the pen's pointer shape from the screen by drawing it in white. */
+    /** Erases the pen's pointer shape from the screen by drawing the previous background. */
     method void erasePen() {
 
         var int i, row, rowEnd, col, colEnd, address, value;
@@ -184,12 +187,14 @@ class Pen {
 
     /** Sets the pen to drawing mode (black). */
     method void startDrawing() {
+        let isDrawingMode = true;
         return;
     }
 
 
-    /** Sets the pen to erasing mode (white). */
+    /** Sets the pen to no drawing mode (white). */
     method void stopDrawing() {
+        let isDrawingMode = false;
         return;
     }
 
@@ -199,42 +204,111 @@ class Pen {
       The actual shape drawn depends on the pen's width.
      */
     method void draw() {
+
+        var int i, row, rowEnd, col, colEnd, value;
+
+        if (~isDrawingMode) {
+            return;
+        } 
+
+        let i = 0;
+        let row = y;
+        let rowEnd = (y + width);
+        while (row < rowEnd + 1) {
+            let col = x / 16;  
+            let colEnd = (x + width) / 16;
+            while (col < colEnd + 1) {
+                let temp = color;
+                let backgroundBuffer[i] = temp;
+                let i = i + 1;
+                let col = col + 1;
+            }
+            let row = row + 1;
+        }
         return;
     }
 
 
     /** Increments the pen width by a fixed value (2 pixels), up to a maximum size. */
     method void increaseSize() {
+        
+        if (((x + width + 2) > screenWidth) | 
+            ((y + width + 2) > screenHeight) |
+            ((width + 2) > maxWidth)) {
+            return;
+        }
+
+        do erasePen();
+        let width = width + 2;
+        do drawPen();
+
         return;
     }
 
 
     /** Decrements the pen width by a fixed value (2 pixels), down to a minimum size. */
     method void decreaseSize() {
+
+        if ((width - 2) < minWidth) {
+            return;
+        }
+
+        do erasePen();
+        let width = width - 2;
+        do drawPen();
+
         return;
     }
 
 
     /** Moves the pen one pixel up. */
     method void moveUp() {
+        if ((y - 1) < 0) {
+            return;
+        }
+
+        do erasePen();
+        let y = y - 1;
+        do drawPen();
         return;
     }
 
 
     /** Moves the pen one pixel down. */
     method void moveDown() {
+        if ((y + width + 1) > screenHeight) {
+            return;
+        }
+
+        do erasePen();
+        let y = y + 1;
+        do drawPen();
         return;
     }
 
 
     /** Moves the pen one pixel to the right. */
     method void moveRight() {
+        if ((x + width + 1) > screenWidth) {
+            return;
+        }
+
+        do erasePen();
+        let x = x + 1;
+        do drawPen();
         return;
     }
 
 
     /** Moves the pen one pixel to the left. */
     method void moveLeft() {
+        if ((x - 1) < 0) {
+            return;
+        }
+
+        do erasePen();
+        let x = x - 1;
+        do drawPen();
         return;
     }
 
@@ -244,6 +318,7 @@ class Pen {
       This method must be called explicitly when the Pen is no longer needed.
      */
     method void dispose() {
+        do Memory.deAlloc(this);
         return;
     }
 
