@@ -50,7 +50,6 @@ class CodeWriter:
         else:
             return "M=M-D\n"
             
-
     def write_compare(self, command: str) -> str:
         """Generates Hack assembly code for comparison commands (eq, gt, lt).
 
@@ -146,7 +145,6 @@ class CodeWriter:
         self.output_stream.write("@SP\n")
         self.output_stream.write("M=M+1\n")
         
-
     def write_push_pop_prefix(self, segment: str, index: int, is_pop: bool) -> str:
         """Generates the Hack assembly code for address calculation in push/pop commands.
 
@@ -211,7 +209,6 @@ class CodeWriter:
         
         return output
 
-
     def write_push(self, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the push command.
 
@@ -229,7 +226,6 @@ class CodeWriter:
         self.output_stream.write("M=D\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("M=M+1\n")
-
 
     def write_pop(self, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the pop command.
@@ -329,7 +325,7 @@ class CodeWriter:
         self.output_stream.write(f"({function_name})\n")
 
         # push constant 0 n_vars times
-        for i in range(n_vars):
+        for _ in range(n_vars):
             self.write_push("constant", 0)
     
 
