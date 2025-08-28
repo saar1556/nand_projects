@@ -52,17 +52,28 @@ class Pen {
       @param Awidth The initial width of the pen.
      */
     constructor Pen new(int Ax, int Ay, int Awidth) { 
+        
+        var int safeWidth, safeX, safeY;
+
         let screenWidth = 511; // 0 to 511
         let screenHeight = 218; // 0 to 218
         let resizeIncrement = 2;
         let resizeDecrement = 2;
         let minWidth = 1;
-        let maxWidth = 20;
+        let maxWidth = 100;
         let SCREEN = 16384;
 
-        let x = Ax;
-        let y = Ay;
-        let width = Awidth;
+        let safeWidth = Math.min(Awidth, maxWidth);
+        let width = safeWidth;
+
+        let safeX = Math.max(0, Ax);
+        let safeX = Math.min(safeX, (screenWidth - width));
+        let x = safeX;
+
+        let safeY = Math.max(0, Ay);
+        let safeY = Math.min(safeY, (screenHeight - width));
+        let y = safeY;
+
         let isDrawingMode = false;
         let color = true;
 
@@ -113,9 +124,9 @@ class Pen {
         // draw internal white square outline
         do Screen.setColor(false); // white
         do Screen.drawRectangle(x + 1, y + 1, x + width, y + width);
-        if (width > 2) {
+        if (width > 4) {
             do Screen.setColor(true);
-            do Screen.drawRectangle(x + 2, y + 2, x + width - 1, y + width - 1);
+            do Screen.drawRectangle(x + 4, y + 4, x + width - 3, y + width - 3);
         }
         
         do Screen.setColor(true);
@@ -206,6 +217,7 @@ class Pen {
     method void draw() {
 
         var int i, row, rowEnd, col, colEnd, value;
+        var boolean temp;
 
         if (~isDrawingMode) {
             return;
