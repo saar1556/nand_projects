@@ -32,6 +32,7 @@
  *     are about to change. When a user performs an undo action, the program restores the pixels from
  *     the buffer to their previous state. This approach is both memory-efficient and fast,
  *     as it only manipulates the pixels that were actually changed.
+ */
 
 class Main {
 
@@ -48,10 +49,17 @@ class Main {
   * canvas from the toolbar. It then enters a loop that listens for keyboard
   * input to control the application.
   */
+
   function void main() {
-    // Your code goes here!
+    var Pen pen;
+
+    /* Initialize pen at position (0, 0) with width 16 */
+    let pen = Pen.new(0, 0, 16);
+
+    /* Draw pen initially */
+    do pen.drawPen();
+
     return;
   }
 
-  // Your code goes here!
 }

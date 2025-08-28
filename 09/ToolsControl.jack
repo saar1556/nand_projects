@@ -29,9 +29,9 @@
  */
 class ToolsControl {
 
-    let static int instructionsWidth =  ### ; // width of the text area
-    let static int instructionsHeight = ### ; // height of the text area
-    let static int instructionsBufferSize = (### * ###) / 16; // Memory needed
+    //let static int instructionsWidth =  ### ; // width of the text area
+    //let static int instructionsHeight = ### ; // height of the text area
+    //let static int instructionsBufferSize = (### * ###) / 16; // Memory needed
     field int currentMode;
     field Array modes;
     field Array screenBuffer;
@@ -41,6 +41,7 @@ class ToolsControl {
      * This constructor should not draw anything on the screen.
      */
     constructor ToolsControl() {
+        return this;
     }
 
     /**
@@ -48,6 +49,7 @@ class ToolsControl {
      * This method should be called once after the object is constructed.
      */
     method void draw() {
+        return;
     }
 
     /**
@@ -77,6 +79,7 @@ class ToolsControl {
      * @param newMode The integer representing the new mode to select.
      */
     method void change_mode(int newMode) {
+        return;
     }
 
     /**
@@ -85,6 +88,7 @@ class ToolsControl {
      * @param newSize The new integer value to display for the pen/shape size.
      */
     method void updateSize(int newSize) {
+        return;
     }
 
     /**
@@ -92,6 +96,7 @@ class ToolsControl {
      * This method must be called explicitly when the object is no longer needed.
      */
     method void dispose() {
+        return;
     }
 
 }

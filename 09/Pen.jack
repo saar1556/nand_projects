@@ -1,159 +1,250 @@
 
-/**
- *  methods list:
- *
- *  constructor()
- *  getSize()
- *  getX()
- *  getY()
- *  isDrawing()
- *  startDrawing()
- *  stopDrawing()
- *  draw()
- *  increaseSize()
- *  decreaseSize()
- *  drawPointer()
- *  erasePointer()
- *  moveUp()
- *  moveDown()
- *  moveRight()
- *  moveLeft()
- *  dispose()
- */
+
+//  methods list:
+//
+//  constructor()
+//  drawPen()
+//  erasePen()
+//  getWidth()
+//  getX()
+//  getY()
+//  isDrawing()
+//  startDrawing()
+//  stopDrawing()
+//  draw()
+//  increaseSize()
+//  decreaseSize()
+//  moveUp()
+//  moveDown()
+//  moveRight()
+//  moveLeft()
+//  dispose()
 
 
-/**
- * The Pen class represents the drawing tool in the drawing application. 
- * This class encapsulates all logic related to the pen's state, including its position (x, y), 
- * its width, and its mode (drawing or erasing). It is responsible for all actions 
- * performed by the drawing tool, such as moving, changing size, and drawing or erasing on the screen.
- *
- * The class uses a set of fields to manage its state:
- * - x, y: The current coordinates of the pen on the screen.
- * - width: The current width of the pen's drawing stroke.
- * - isDrawingMode: A boolean flag indicating whether the pen is in drawing mode.
- *
- * The class also uses static fields to define the screen boundaries and size limits, ensuring
- * that all movements and size changes remain within the allowed range.
+/** The Pen class represents the drawing tool in the drawing application. 
+  This class encapsulates all logic related to the pen's state, including its position (x, y), 
+  its width, and its mode (drawing or erasing). It is responsible for all actions 
+  performed by the drawing tool, such as moving, changing size, and drawing or erasing on the screen.
+ 
+  The class uses a set of fields to manage its state:
+  - x, y: The current coordinates of the pen on the screen.
+  - width: The current width of the pen's drawing stroke.
+  - isDrawingMode: A boolean flag indicating whether the pen is in drawing mode.
+ 
+  The class also uses static fields to define the screen boundaries and size limits, ensuring
+  that all movements and size changes remain within the allowed range.
  */
 class Pen {
-
-    let static int screenWidth = 511; // 0 to 511
-    let static int screenHeight = 218; // 0 to 218
-    let static int resizeIncrement = 2;
-    let static int resizeDcrement = 2;
-    let static int minWidth = 1;
-    ket static int maxWidth = 100;
+    
+    static int screenWidth, screenHeight, resizeIncrement;
+    static int resizeDecrement, minWidth, maxWidth, SCREEN;
     field int x, y; // screen location of the pointer's top-left corner
     field int width; // line width in pixels
     field boolean isDrawingMode; // Indicates if the pen is in drawing (true) or erasing (false) mode 
+    field Array backgroundBuffer;
 
 
-    /**
-     * Constructs a new Pen object at a given starting position and width.
-     *
-     * @param Ax The initial x-coordinate.
-     * @param Ay The initial y-coordinate.
-     * @param Awidth The initial width of the pen.
+    /** Constructs a new Pen object at a given starting position and width.
+     
+      @param Ax The initial x-coordinate.
+      @param Ay The initial y-coordinate.
+      @param Awidth The initial width of the pen.
      */
     constructor Pen new(int Ax, int Ay, int Awidth) { 
+        let screenWidth = 511; // 0 to 511
+        let screenHeight = 218; // 0 to 218
+        let resizeIncrement = 2;
+        let resizeDecrement = 2;
+        let minWidth = 1;
+        let maxWidth = 20;
+        let SCREEN = 16384;
+        let x = Ax;
+        let y = Ay;
+        let width = Awidth;
+        let isDrawingMode = false;
+
+        // Allocate backgroundBuffer to save screen area under the pen.
+        // Each word = 16 pixels; add 15 to ensure ceiling division.
+        // backgroundBuffer size = ((maxWidth + 2)*(maxWidth + 2)+15)/16 words.
+        let backgroundBuffer = Array.new(((maxWidth + 2) * (maxWidth + 2) + 15) / 16);
+        return this;
     }
 
     
-    /* Returns the current width of the pen. */
-    method int getSize() {
+    /** Draws the pen's pointer shape on the screen in black. */
+    method void drawPen() {
+
+        var int i;
+        var int row;
+        var int rowEnd;
+        var int col;
+        var int colEnd;
+        var int address;
+        var int temp;
+        
+        if ( ( (x + width + 1) > screenWidth) | ( (y + width + 1) > screenHeight) ) {
+            return;
+        }
+
+        // Save the background to the backgroundBuffer 
+        let i = 0;
+        let row = y;
+        let rowEnd = (y + width);
+        while (row < rowEnd + 1) {
+            let col = x / 16;  
+            let colEnd = (x + width) / 16;
+            while (col < colEnd + 1) {
+                let address = SCREEN + (row * 32) + col;
+                let temp = Memory.peek(address);
+                let backgroundBuffer[i] = temp;
+                let i = i + 1;
+                let col = col + 1;
+            }
+            let row = row + 1;
+        }
+
+        // draw square present the pointer
+        do Screen.setColor(true); // black
+        do Screen.drawRectangle(x, y, x + width + 1, y + width + 1);
+
+        // draw internal white square outline
+        do Screen.setColor(false); // white
+        do Screen.drawRectangle(x + 1, y + 1, x + width, y + width);
+        if (width > 2) {
+            do Screen.setColor(true);
+            do Screen.drawRectangle(x + 2, y + 2, x + width - 1, y + width - 1);
+        }
+        
+        do Screen.setColor(true);
+        return;
+    }
+    
+
+    /** Erases the pen's pointer shape from the screen by drawing it in white. */
+    method void erasePen() {
+
+        var int i, row, rowEnd, col, colEnd, address, value;
+
+        let i = 0;
+        let row = y;
+        let rowEnd = (y + width); 
+        while (row < rowEnd + 1) {
+            let col = x / 16;  
+            let colEnd = (x + width) / 16;
+
+            while (col < colEnd + 1) {
+                let address = SCREEN + (row * 32) + col;
+                let value = backgroundBuffer[i];
+                do Memory.poke(address, value);
+                let i = i + 1;
+                let col = col + 1;
+            }
+            let row = row + 1;
+        }
+        
+        return;
+    }
+
+    
+    /** Returns the current width of the pen. */
+    method int getWidth() {
+        return width;
     }
 
 
-    /**
-     * Checks if the pen is in drawing mode.
-     *
-     * @return true if the pen is in drawing mode, false otherwise.
+    /**  
+      Checks if the pen is in drawing mode.
+     
+      @return true if the pen is in drawing mode, false otherwise.
      */
-    method boolean isDrawing(){
+    method boolean isDrawing() {
+        return isDrawingMode;
     }
 
 
-    /**
-    * Returns the current x-coordinate of the pen on the screen.
-    *
-    * @return The x-coordinate of the pen.
+    /** 
+      Returns the current x-coordinate of the pen on the screen.
+    
+      @return The x-coordinate of the pen.
     */
     method int getX() {
+        return x;
     }
 
 
     /**
-    * Returns the current y-coordinate of the pen on the screen.
-    *
-    * @return The y-coordinate of the pen.
+     Returns the current y-coordinate of the pen on the screen.
+    
+     @return The y-coordinate of the pen.
     */
     method int getY() {
+        return y;
     }
 
 
-    /* Sets the pen to drawing mode (black). */
+    /** Sets the pen to drawing mode (black). */
     method void startDrawing() {
+        return;
     }
 
 
-    /* Sets the pen to erasing mode (white). */
+    /** Sets the pen to erasing mode (white). */
     method void stopDrawing() {
+        return;
     }
 
 
     /**
-     * Draws a line or square at the current pen location based on the drawing mode.
-     * The actual shape drawn depends on the pen's width.
+      Draws a line or square at the current pen location based on the drawing mode.
+      The actual shape drawn depends on the pen's width.
      */
     method void draw() {
+        return;
     }
 
 
-    /* Increments the pen width by a fixed value (2 pixels), up to a maximum size. */
+    /** Increments the pen width by a fixed value (2 pixels), up to a maximum size. */
     method void increaseSize() {
+        return;
     }
 
 
-    /* Decrements the pen width by a fixed value (2 pixels), down to a minimum size. */
+    /** Decrements the pen width by a fixed value (2 pixels), down to a minimum size. */
     method void decreaseSize() {
+        return;
     }
 
 
-    /* Draws the pen's pointer shape on the screen in black. */
-    method void drawPointer() {
-    }
-
-
-    /* Erases the pen's pointer shape from the screen by drawing it in white. */
-    method void erasePointer() {
-    }
-
-
-    /* Moves the pen one pixel up. */
+    /** Moves the pen one pixel up. */
     method void moveUp() {
+        return;
     }
 
 
-    /* Moves the pen one pixel down. */
+    /** Moves the pen one pixel down. */
     method void moveDown() {
+        return;
     }
 
 
-    /* Moves the pen one pixel to the right. */
+    /** Moves the pen one pixel to the right. */
     method void moveRight() {
+        return;
     }
 
 
-    /* Moves the pen one pixel to the left. */
+    /** Moves the pen one pixel to the left. */
     method void moveLeft() {
+        return;
     }
 
 
     /**
-     * Disposes this Pen object and its resources.
-     * This method must be called explicitly when the Pen is no longer needed.
+      Disposes this Pen object and its resources.
+      This method must be called explicitly when the Pen is no longer needed.
      */
-    method void dispose()
+    method void dispose() {
+        return;
+    }
 
 }
