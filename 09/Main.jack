@@ -36,7 +36,7 @@
 
 class Main {
 
-  static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECT,CIRCLE,TRIANGLE,CLEAR;
+  static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECTANGLE,CIRCLE,TRIANGLE,CLEAR,END;
 
   /**
   * The main function of the program. It initializes the drawing application,
@@ -53,25 +53,58 @@ class Main {
 
   function void main() {
     var Pen pen;
+    var ToolsControl tb;
     var int key;
     var boolean exit;
-
-    let UP = 131;
-    let DOWN = 133;
-    let LEFT = 130;
-    let RIGHT = 132;
-    let PEN =;
-    let ERASE =;
-    let CIRCLE =;
-    let TRIANGLE =;
-    let CLEAR =;
-
+    
+    let UP        = 131;
+    let DOWN      = 133;
+    let LEFT      = 130;
+    let RIGHT     = 132;
+    let PEN       = 49;
+    let ERASE     = 50;
+    let RECTANGLE = 51;
+    let CIRCLE    = 52;
+    let TRIANGLE  = 53;
+    let CLEAR     = 54;
+    let END       = 113;
 
     let pen = Pen.new(50, 50, 10);
     do Screen.clearScreen();
     do pen.drawPen();
-     
+    let tb = ToolsControl.new();
+
+    ///**
+    let key = 0;
+    let exit = false;
+
+    while (~exit) {
+        // wait for a key
+        while (key = 0) {
+            let key = Keyboard.keyPressed();
+        }
+
+        if (key = UP)        { do pen.moveUp();    }   // up arrow
+        if (key = DOWN)      { do pen.moveDown();  }   // down arrow
+        if (key = LEFT)      { do pen.moveLeft();  }   // left arrow
+        if (key = RIGHT)     { do pen.moveRight(); }   // right arrow
+
+        if (key = PEN)       { do tb.change_mode(0); } // '1'
+        if (key = ERASE)     { do tb.change_mode(1); } // '2'
+        if (key = RECTANGLE) { do tb.change_mode(2); } // '3'
+        if (key = CIRCLE)    { do tb.change_mode(3); } // '4'
+        if (key = TRIANGLE)  { do tb.change_mode(4); } // '5'
+        if (key = CLEAR)     { do tb.change_mode(5); } // '6'
+
+        if (key = END)       { let exit = true; }      // e.g., 'q' or Esc, per your constant
+
+        let key = 0;   // reset so inner loop waits for the next press
+    }
+
+    do pen.dispose();
+    do tb.dispose();
+    //*/
     return;
   }
-
+  
 }
