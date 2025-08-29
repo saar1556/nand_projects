@@ -11,8 +11,6 @@
  *  Array moods : [pen, eraser, square, circle, triangle]
  */
 
-
-
 /**
  * The ToolsControl class is responsible for managing the graphical user interface (GUI) of the drawing application,
  * specifically the toolbar and the instructions displayed to the user. This class handles the selection of different
@@ -27,20 +25,38 @@
  * @field screenBuffer: A temporary memory buffer used to store a portion of the screen
  * when instructions are displayed, to allow for later restoration.
  */
+
 class ToolsControl {
 
-    //let static int instructionsWidth =  ### ; // width of the text area
-    //let static int instructionsHeight = ### ; // height of the text area
-    //let static int instructionsBufferSize = (### * ###) / 16; // Memory needed
-    field int currentMode;
-    field Array modes;
-    field Array screenBuffer;
+    /** Modes */
+    static int MODE_PEN, MODE_ERASE, MODE_LINE, MODE_RECT, MODE_CIRCLE, MODE_TRI, MODE_CLEAR;
 
-    /**
-     * Constructs a new ToolsControl object and initializes the toolbar state.
-     * This constructor should not draw anything on the screen.
-     */
-    constructor ToolsControl() {
+    /** Layout */
+    static int TOOL_Y1, TOOL_Y2, BTN_TOP, BTN_BOT, BTN_PAD, NUM_BTNS;
+
+    /** State */
+    field int currentMode;
+
+    /** Constructor */
+    constructor ToolsControl new() {
+        let MODE_PEN    = 0;
+        let MODE_ERASE  = 1;
+        let MODE_LINE   = 2;
+        let MODE_RECT   = 3;
+        let MODE_CIRCLE = 4;
+        let MODE_TRI    = 5;
+        let MODE_CLEAR  = 6;
+
+        let TOOL_Y1 = 220;
+        let TOOL_Y2 = 255;
+        let BTN_TOP = 224;
+        let BTN_BOT = 252;
+        let BTN_PAD = 2;
+        let NUM_BTNS = 7;
+
+        let currentMode = MODE_PEN;
+
+        do draw();
         return this;
     }
 
@@ -49,6 +65,28 @@ class ToolsControl {
      * This method should be called once after the object is constructed.
      */
     method void draw() {
+        var int i, cellW, x1, x2;
+
+        // clear toolbar strip (white) and draw a top border line
+        do Screen.setColor(false);                          // white
+        do Screen.drawRectangle(0, TOOL_Y1, 511, TOOL_Y2);
+        do Screen.setColor(true);                           // black
+        do Screen.drawLine(0, TOOL_Y1 - 1, 511, TOOL_Y1 - 1);
+
+        // cell width (integer division)
+        let cellW = 512 / NUM_BTNS;
+
+        // draw each button
+        let i = 0;
+        while (i < NUM_BTNS) {
+            let x1 = i * cellW + BTN_PAD;
+            let x2 = (i + 1) * cellW - BTN_PAD - 1;
+            do drawButton(i, x1, BTN_TOP, x2, BTN_BOT, (i = currentMode));
+            let i = i + 1;
+        }
+
+        // leave color black as default
+        do Screen.setColor(true);
         return;
     }
 
@@ -63,7 +101,7 @@ class ToolsControl {
         return;
     }
 
-    /* Restores the drawing canvas from the temporary buffer. */
+    //* Restores the drawing canvas from the temporary buffer. */
     method void hideInstructions() {
         // ... copy buffer content to screen
         do Memory.deAlloc(screenBuffer);
@@ -79,6 +117,7 @@ class ToolsControl {
      * @param newMode The integer representing the new mode to select.
      */
     method void change_mode(int newMode) {
+        if (newMode < 7 & mode > -1) { let currentMode = newMode; }
         return;
     }
 

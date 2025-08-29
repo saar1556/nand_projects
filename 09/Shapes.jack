@@ -1,0 +1,101 @@
+
+/**
+ *  methods list:
+ *
+ *  draw_rectangle()
+ *  draw_rectangle_outline()
+ *  draw_circle()
+ *  draw_circle_outline()
+ *  draw_triangle()
+ *  draw_triangle_outline()
+ */
+
+
+/**
+ * The Shape class provides static methods for drawing various shapes
+ * (rectangles, circles, and triangles) on the screen. This class acts as a
+ * utility library and does not maintain its own state. All drawing is based
+ * on the parameters provided to its methods.
+ */
+class Shapes {
+    
+    //* Draws a filled rectangle on the screen, defined by two opposite corners. */
+    method void draw_rectangle (int x1, int y1, int x2, int y2) {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x1, y1, x2, y2);
+        return;
+    }
+
+    //* Draws a filled circle on the screen, defined by a bounding box. */
+    method void draw_circle (int x1, int y1, int x2, int y2) {
+        var int radius;
+        var int x, y;
+
+        let x = (x1 + x2) / 2;
+        let y = (y1 + y2) / 2;
+        let radius = Math.min((x2 - x1) / 2, (y2 - y1) / 2);
+
+        do Screen.setColor(true);
+        if (radius > 0) {
+            do Screen.drawCircle(x, y, radius);
+        }
+
+        return;
+    }
+  
+    //* Draws a filled triangle, defined by its three vertices. */
+    method void draw_triangle (int x1, int y1, int x2, int y2) {
+        var int x3, y3;
+        let x3 = (x1 + x2)/2;
+        let y3 = y2;
+
+        do Screen.setColor(true);
+        do Screen.drawLine(x1, y1, x2, y2);
+        while (Math.abs(y3 - y1) > 0) {
+            do Screen.drawLine(x2, y2, x3, y3);
+            do Screen.drawLine(x3, y3, x1, y1);
+            if (y3 > y1) {let y3 = y3 - 1; }
+            if (y3 < y1) {let y3 = y3 + 1; }
+        }
+        return;
+    }
+
+    method void draw_line (int x1, int y1, int x2, int y2) {
+        do Screen.drawLine(x1, x2, y1, y2);
+        return;
+    }
+
+    //* Draws the outline of a rectangle. */b
+    method void draw_rectangle_outline (int x1, int y1, int x2, int y2) {
+        do Screen.setColor(true);
+        do Screen.drawLine(x1, y1, x2, y1);
+        do Screen.drawLine(x2, y1, x2, y2);
+        do Screen.drawLine(x2, y2, x1, y2);
+        do Screen.drawLine(x1, y2, x1, y1);
+        return;
+    }
+
+    //* Draws the outline of a circle. */
+    method void draw_circle_outline (int x1, int x2, int y1, int y2) {
+            do Screen.setColor(true);
+            do draw_circle(x1,y1,x2,y2);
+            do Screen.setColor(false);
+            do draw_circle(x1,y1,x2,y2);
+            return;
+    }
+
+    //* Draws the outline of a triangle. */
+    method void draw_triangle_outline (int x1, int y1, int x2, int y2) {
+            var int x3, y3;
+            let x3 = (x1 + x2)/2;
+            let y3 = y2;
+
+            do Screen.setColor(true);
+            do Screen.drawLine(x1, y1, x2, y2);
+            do Screen.drawLine(x2, y2, x3, y3);
+            do Screen.drawLine(x3, y3, x1, y1);
+           
+        return;
+    }
+
+ }
