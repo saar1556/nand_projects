@@ -36,9 +36,12 @@ class ToolsControl {
 
     /** State */
     field int currentMode;
+    field Array screenBuffer;     // null when not used
+    field boolean hasBuf;
 
     /** Constructor */
     constructor ToolsControl new() {
+
         let MODE_PEN    = 0;
         let MODE_ERASE  = 1;
         let MODE_LINE   = 2;
@@ -55,10 +58,80 @@ class ToolsControl {
         let NUM_BTNS = 7;
 
         let currentMode = MODE_PEN;
+        let screenBuffer = null;
+        let hasBuf = false;
 
         do draw();
         return this;
     }
+
+// ############################################################################################
+// draw ToolBox
+// ############################################################################################
+
+
+     function void iconPen(int x1, int y1, int x2, int y2) {
+        var int m;
+        // a diagonal "pen stroke" and tip
+        do Screen.drawLine(x1 + 6, y2 - 6, x2 - 8, y1 + 8);
+        do Screen.drawLine(x1 + 10, y2 - 6, x1 + 16, y2 - 12); // nib
+        return;
+    }
+
+    function void iconEraser(int x1, int y1, int x2, int y2, boolean selected) {
+        // eraser block (filled white on black bg; on white bg it's just outline)
+        if (selected) { do Screen.setColor(false); }  // draw white on black
+        do Screen.drawRectangle(x1 + 14, y1 + 10, x2 - 14, y2 - 8);
+        if (selected) { do Screen.setColor(true); }
+        do Screen.drawLine(x1 + 12, y2 - 6, x2 - 12, y2 - 6);  // "crumbs"
+        return;
+    }
+
+    function void iconClear(int x1, int y1, int x2, int y2) {
+    do Screen.drawLine(x1 + 8, y1 + 8, x2 - 8, y2 - 8);
+    do Screen.drawLine(x2 - 8, y1 + 8, x1 + 8, y2 - 8);
+    return; 
+    }
+
+    /** Draw one button (background, border, icon, selected highlight) */
+    function void drawButton(int mode, int x1, int y1, int x2, int y2, boolean selected) {
+        var int cx, cy;
+
+        // background
+        if (selected) {
+            do Screen.setColor(true);                          // black bg
+            do Screen.drawRectangle(x1, y1, x2, y2);
+            do Screen.setColor(false);                         // white icon/border
+        } else {
+            do Screen.setColor(false);                         // white bg
+            do Screen.drawRectangle(x1, y1, x2, y2);
+            do Screen.setColor(true);                          // black icon/border
+        }
+
+        // border
+        do Screen.drawLine(x1, y1, x2, y1);
+        do Screen.drawLine(x2, y1, x2, y2);
+        do Screen.drawLine(x2, y2, x1, y2);
+        do Screen.drawLine(x1, y2, x1, y1);
+
+        // icon drawing area center
+        let cx = (x1 + x2) / 2;
+        let cy = (y1 + y2) / 2;
+
+        // draw icon per mode
+        if (mode = MODE_PEN) { do ToolsControl.iconPen(x1, y1, x2, y2); }
+        if (mode = MODE_ERASE) { do ToolsControl.iconEraser(x1, y1, x2, y2, selected); }
+        if (mode = MODE_LINE) { do Shapes.draw_line(x1 + 6, y2 - 6, x2 - 6, y1 + 6); }
+        if (mode = MODE_RECT) { do Shapes.draw_rectangle_outline(x1 + 10, y1 + 8, x2 - 10, y2 - 8);}
+        if (mode = MODE_CIRCLE) { do Shapes.draw_circle_outline(x1 + 8, y1 + 6, x2 - 8, y2 - 6); }
+        if (mode = MODE_TRI) { do Shapes.draw_triangle_outline(x1 + 8, y1 + 6, x2 - 8, y2 - 8); }
+        if (mode = MODE_CLEAR) { do ToolsControl.iconClear(x1, y1, x2, y2); }
+
+        // restore default black for the rest of the UI
+        do Screen.setColor(true);
+        return;
+    }
+
 
     /**
      * Draws the entire toolbar interface, including mode icons and labels.
@@ -81,7 +154,7 @@ class ToolsControl {
         while (i < NUM_BTNS) {
             let x1 = i * cellW + BTN_PAD;
             let x2 = (i + 1) * cellW - BTN_PAD - 1;
-            do drawButton(i, x1, BTN_TOP, x2, BTN_BOT, (i = currentMode));
+            do ToolsControl.drawButton(i, x1, BTN_TOP, x2, BTN_BOT, (i = currentMode));
             let i = i + 1;
         }
 
@@ -90,12 +163,15 @@ class ToolsControl {
         return;
     }
 
+
+// ############################################################################################
+
     /**
      * Saves the portion of the drawing canvas that will be overwritten by instructions
      * into a temporary memory buffer.
      */
     method void showInstructions() {
-        let screenBuffer = Memory.alloc(ToolsControl.instructionsBufferSize);
+        // let screenBuffer = Memory.alloc(ToolsControl.instructionsBufferSize);
         // ... copy screen content
         // ... display instructions
         return;
@@ -104,7 +180,7 @@ class ToolsControl {
     //* Restores the drawing canvas from the temporary buffer. */
     method void hideInstructions() {
         // ... copy buffer content to screen
-        do Memory.deAlloc(screenBuffer);
+        // do Memory.deAlloc(screenBuffer);
         return;
     }
 
@@ -117,7 +193,8 @@ class ToolsControl {
      * @param newMode The integer representing the new mode to select.
      */
     method void change_mode(int newMode) {
-        if (newMode < 7 & mode > -1) { let currentMode = newMode; }
+        if (newMode < 7 & newMode > -1) { let currentMode = newMode; }
+        do draw();
         return;
     }
 
@@ -135,7 +212,17 @@ class ToolsControl {
      * This method must be called explicitly when the object is no longer needed.
      */
     method void dispose() {
+        // 1) free any remaining buffers
+        if (hasBuf) {
+            do screenBuffer.dispose();
+            let screenBuffer = null;
+            let hasBuf = false;
+        }
+        // 2) free other arrays/strings you created with 'new' (if any)
+        //    e.g., if you had: field Array modes; then: if (~(modes = null)) { do Array.dispose(modes); let modes = null; }
+
+        // 3) finally, free this object (optional; only if you won’t use it again)
+        do Memory.deAlloc(this);
         return;
     }
-
 }
