@@ -80,7 +80,7 @@ class Pen {
         // Allocate backgroundBuffer to save screen area under the pen.
         // Each word = 16 pixels; add 15 to ensure ceiling division.
         // backgroundBuffer size = ((maxWidth + 2)*(maxWidth + 2)+15)/16 words.
-        let backgroundBuffer = Array.new(((maxWidth + 2) * (maxWidth + 2) + 15) / 16);
+        let backgroundBuffer = Array.new(((maxWidth) * (maxWidth) + 15) / 16);
         return this;
     }
 
@@ -96,7 +96,7 @@ class Pen {
         var int address;
         var int temp;
         
-        if ( ( (x + width + 1) > screenWidth) | ( (y + width + 1) > screenHeight) ) {
+        if ( ( (x + width) > screenWidth) | ( (y + width) > screenHeight) ) {
             return;
         }
 
@@ -119,14 +119,14 @@ class Pen {
 
         // draw square present the pointer
         do Screen.setColor(true); // black
-        do Screen.drawRectangle(x, y, x + width + 1, y + width + 1);
+        do Screen.drawRectangle(x, y, x + width, y + width);
 
         // draw internal white square outline
         do Screen.setColor(false); // white
-        do Screen.drawRectangle(x + 1, y + 1, x + width, y + width);
-        if (width > 4) {
+        do Screen.drawRectangle(x + 1, y + 1, x + width - 1, y + width - 1);
+        if (width > 6) {
             do Screen.setColor(true);
-            do Screen.drawRectangle(x + 4, y + 4, x + width - 3, y + width - 3);
+            do Screen.drawRectangle(x + 3, y + 3, x + width - 3, y + width - 3);
         }
         
         do Screen.setColor(true);
