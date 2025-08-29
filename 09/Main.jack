@@ -36,6 +36,8 @@
 
 class Main {
 
+  static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECT,CIRCLE,TRIANGLE,CLEAR;
+
   /**
   * The main function of the program. It initializes the drawing application,
   * creates the necessary objects for the pen and the toolbar, and enters the
@@ -53,6 +55,17 @@ class Main {
     var Pen pen;
     var int key;
     var boolean exit;
+
+    let UP = 131;
+    let DOWN = 133;
+    let LEFT = 130;
+    let RIGHT = 132;
+    let PEN =;
+    let ERASE =;
+    let CIRCLE =;
+    let TRIANGLE =;
+    let CLEAR =;
+
 
     let pen = Pen.new(50, 50, 10);
     do Screen.clearScreen();
