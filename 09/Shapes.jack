@@ -60,12 +60,7 @@ class Shapes {
         return;
     }
 
-    function void draw_line (int x1, int y1, int x2, int y2) {
-        do Screen.drawLine(x1, x2, y1, y2);
-        return;
-    }
-
-    //* Draws the outline of a rectangle. */b
+    //* Draws the outline of a rectangle. */
     function void draw_rectangle_outline (int x1, int y1, int x2, int y2) {
         do Screen.setColor(true);
         do Screen.drawLine(x1, y1, x2, y1);
@@ -97,5 +92,4 @@ class Shapes {
            
         return;
     }
-
  }

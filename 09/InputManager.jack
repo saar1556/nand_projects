@@ -1,0 +1,12 @@
+class InputManager {
+    static int UP, DOWN, LEFT, RIGHT, PEN, , MODE_CLEAR;
+    
+
+
+    if (key = 131) { let direction = 1; }   // up arrow
+    if (key = 133) { let direction = 2; }   // down arrow
+    if (key = 130) { let direction = 3; }   // left arrow
+    if (key = 132) { let direction = 4; }   // right arrow
+
+
+}

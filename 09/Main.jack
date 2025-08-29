@@ -54,7 +54,7 @@ class Main {
     var int key;
     var boolean exit;
 
-    let pen = Pen.new(0, 0, 5);
+    let pen = Pen.new(50, 50, 10);
     do Screen.clearScreen();
     do pen.drawPen();
      
