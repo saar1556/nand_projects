@@ -11,6 +11,8 @@
 //  isDrawing()
 //  startDrawing()
 //  stopDrawing()
+//  setColor()
+//  getColor()
 //  draw()
 //  increaseSize()
 //  decreaseSize()
@@ -199,8 +201,6 @@ class Pen {
 
     /** Sets the pen to drawing mode (black). */
     method void startDrawing() {
-        // do Screen.setColor(true);
-        // let color = true; 
         let isDrawingMode = true; 
         return;
     }
@@ -208,10 +208,17 @@ class Pen {
 
     /** Sets the pen to no drawing mode (white). */
     method void stopDrawing() {
-        // do Screen.setColor(false);
-        // let color = false;
         let isDrawingMode = false;
         return;
+    }
+
+    method void setColor(boolean inputColor) {
+        let color = inputColor;
+        return;
+    }
+
+    method boolean getColor() {
+        return color;
     }
 
 
@@ -287,7 +294,13 @@ class Pen {
             return;
         }
 
-        do erasePen();
+        if (isDrawingMode) {
+            do draw();
+        }
+        if (~isDrawingMode) {
+            do erasePen();
+        }
+        
         let y = y - 1;
         do drawPen();
         return;
@@ -300,7 +313,12 @@ class Pen {
             return;
         }
 
-        do erasePen();
+        if (isDrawingMode) {
+            do draw();
+        }
+        if (~isDrawingMode) {
+            do erasePen();
+        }
         let y = y + 1;
         do drawPen();
         return;
@@ -313,7 +331,12 @@ class Pen {
             return;
         }
 
-        do erasePen();
+        if (isDrawingMode) {
+            do draw();
+        }
+        if (~isDrawingMode) {
+            do erasePen();
+        }
         let x = x + 1;
         do drawPen();
         return;
@@ -326,7 +349,12 @@ class Pen {
             return;
         }
 
-        do erasePen();
+        if (isDrawingMode) {
+            do draw();
+        }
+        if (~isDrawingMode) {
+            do erasePen();
+        }
         let x = x - 1;
         do drawPen();
         return;
