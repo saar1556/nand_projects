@@ -79,7 +79,7 @@ class Pen {
 
         // Allocate backgroundBuffer to save screen area under the pen.
         // Each word = 16 pixels; add 15 to ensure ceiling division.
-        // backgroundBuffer size = ((maxWidth + 2)*(maxWidth + 2)+15)/16 words.
+        // backgroundBuffer size = ((maxWidth)*(maxWidth)+15)/16 words.
         let backgroundBuffer = Array.new(((maxWidth) * (maxWidth) + 15) / 16);
         return this;
     }
@@ -198,13 +198,17 @@ class Pen {
 
     /** Sets the pen to drawing mode (black). */
     method void startDrawing() {
-        let isDrawingMode = true;
+        do Screen.setColor(true);
+        let color = true; 
+        let isDrawingMode = true; 
         return;
     }
 
 
     /** Sets the pen to no drawing mode (white). */
     method void stopDrawing() {
+        do Screen.setColor(false);
+        let color = false;
         let isDrawingMode = false;
         return;
     }
@@ -216,7 +220,7 @@ class Pen {
      */
     method void draw() {
 
-        var int i, row, rowEnd, col, colEnd, value;
+        /** var int i, row, rowEnd, col, colEnd, value;
         var boolean temp;
 
         if (~isDrawingMode) {
@@ -236,7 +240,10 @@ class Pen {
                 let col = col + 1;
             }
             let row = row + 1;
-        }
+        } */
+
+        do Screen.setColor(color);
+        do Screen.drawRectangle(x, y, x + width, y + width);
         return;
     }
 

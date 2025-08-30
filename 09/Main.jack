@@ -49,16 +49,57 @@ class Main {
   * input to control the application.
   */
 
-  function void main() {
-    var Pen pen;
-    var int key;
-    var boolean exit;
+  static boolean endProgram;
 
-    let pen = Pen.new(50, 50, 10);
-    do Screen.clearScreen();
-    do pen.drawPen();
-     
-    return;
-  }
+  function void main() {
+        var Pen pen;
+        var char key;
+        
+        // Error: This line has two issues.
+        // 1. You cannot assign to a static variable like this in Jack.
+        // 2. The `let` statement expects a variable on the left side.
+        // The fix is to initialize static variables outside methods.
+        // Let's remove this line, as static fields are initialized to false/0 by default.
+        
+        // Create a new Pen object at a starting position with an initial width.
+        let pen = Pen.new(100, 100, 10);
+        do pen.drawPen(); // Draw the initial pen cursor on the screen.
+        
+        // The main application loop.
+        while (~endProgram) { // Error: endProgram must be an int or a boolean.
+            
+            // Wait for a key to be pressed.
+            while (key = 0) {
+                let key = Keyboard.keyPressed();
+            }
+
+            // Handle the key press.
+            if (key = 130) { do pen.moveUp(); }    // Up Arrow
+            if (key = 131) { do pen.moveDown(); }  // Down Arrow
+            if (key = 132) { do pen.moveLeft(); }  // Left Arrow
+            if (key = 133) { do pen.moveRight(); } // Right Arrow
+            
+            // Handle other keys for different actions.
+            if (key = 129) { do pen.startDrawing(); do pen.draw(); } // Enter to start drawing
+            if (key = 141) { do pen.stopDrawing(); } // Space to stop drawing
+            if (key = 45) { do pen.decreaseSize(); } // Minus key
+            if (key = 61) { do pen.increaseSize(); } // Equal key
+
+            // Check for a specific key to end the program (e.g., 'Q').
+            if (key = 81) {
+                let endProgram = true;
+            }
+
+            // Wait for the key to be released before polling again.
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+            }
+        }
+        
+        do pen.erasePen(); // Erase the pen cursor before exiting.
+        do pen.dispose(); // Dispose of the pen object to free memory.
+        
+        return;
+    }
 
 }
