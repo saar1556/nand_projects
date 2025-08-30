@@ -29,15 +29,17 @@
 class ToolsControl {
 
     /** Modes */
-    static int MODE_PEN, MODE_ERASE, MODE_LINE, MODE_RECT, MODE_CIRCLE, MODE_TRI, MODE_CLEAR;
+    static int MODE_PEN, MODE_ERASE, MODE_RECT, MODE_CIRCLE, MODE_TRI, MODE_CLEAR;
 
     /** Layout */
-    static int TOOL_Y1, TOOL_Y2, BTN_TOP, BTN_BOT, BTN_PAD, NUM_BTNS;
+    static int TOOL_Y1, TOOL_Y2, BTN_TOP, BTN_BOT, BTN_WID, BTN_PAD, NUM_BTNS;
 
     /** State */
     field int currentMode;
     field Array screenBuffer;     // null when not used
     field boolean hasBuf;
+
+    field Array btn_locs;
 
     /** Constructor */
     constructor ToolsControl new() {
@@ -52,90 +54,43 @@ class ToolsControl {
         let TOOL_Y1 = 219;
         let TOOL_Y2 = 255;
         let BTN_TOP = 224;
-        let BTN_BOT = 252;
+        let BTN_BOT = 240;
+        let BTN_WID = 16;
         let BTN_PAD = 2;
         let NUM_BTNS = 6;
+
 
         let currentMode = MODE_PEN;
         let screenBuffer = null;
         let hasBuf = false;
 
+        let btn_locs = Array.new(NUM_BTNS);
+        do calculateLocations();
+
         do draw();
         return this;
     }
 
+
+    method void calculateLocations() {
+        var int i;
+        let i = 0;
+        while (i < NUM_BTNS) {
+            let btn_locs[i] = BTN_PAD * i * (BTN_WID);   // desired left edge
+            let i = i + 1;
+        }
+        return;
+    }
 // ############################################################################################
 // draw ToolBox
 // ############################################################################################
 
-
-     function void iconPen(int x1, int y1, int x2, int y2) {
-        var int m;
-        // a diagonal "pen stroke" and tip
-        do Screen.drawLine(x1 + 6, y2 - 6, x2 - 8, y1 + 8);
-        do Screen.drawLine(x1 + 10, y2 - 6, x1 + 16, y2 - 12); // nib
-        return;
-    }
-
-    function void iconEraser(int x1, int y1, int x2, int y2, boolean selected) {
-        // eraser block (filled white on black bg; on white bg it's just outline)
-        if (selected) { do Screen.setColor(false); }  // draw white on black
-        do Screen.drawRectangle(x1 + 14, y1 + 10, x2 - 14, y2 - 8);
-        if (selected) { do Screen.setColor(true); }
-        do Screen.drawLine(x1 + 12, y2 - 6, x2 - 12, y2 - 6);  // "crumbs"
-        return;
-    }
-
-    function void iconClear(int x1, int y1, int x2, int y2) {
-        do Screen.drawLine(x1 + 8, y1 + 8, x2 - 8, y2 - 8);
-        do Screen.drawLine(x2 - 8, y1 + 8, x1 + 8, y2 - 8);
-        return; 
-    }
-
-    /** Draw one button (background, border, icon, selected highlight) */
-    function void drawButton(int mode, int x1, int y1, int x2, int y2, boolean selected) {
-        var int cx, cy;
-
-        // background
-        if (selected) {
-            do Screen.setColor(true);                          // black bg
-            do Screen.drawRectangle(x1, y1, x2, y2);
-            do Screen.setColor(false);                         // white icon/border
-        } else {
-            do Screen.setColor(false);                         // white bg
-            do Screen.drawRectangle(x1, y1, x2, y2);
-            do Screen.setColor(true);                          // black icon/border
-        }
-
-        // border
-        do Screen.drawLine(x1, y1, x2, y1);
-        do Screen.drawLine(x2, y1, x2, y2);
-        do Screen.drawLine(x2, y2, x1, y2);
-        do Screen.drawLine(x1, y2, x1, y1);
-
-        // icon drawing area center
-        let cx = (x1 + x2) / 2;
-        let cy = (y1 + y2) / 2;
-
-        // draw icon per mode
-        if (mode = MODE_PEN) { do ToolsControl.iconPen(x1, y1, x2, y2); }
-        if (mode = MODE_ERASE) { do ToolsControl.iconEraser(x1, y1, x2, y2, selected); }
-        if (mode = MODE_RECT) { do Shapes.draw_rectangle_outline(x1 + 10, y1 + 8, x2 - 10, y2 - 8);}
-        if (mode = MODE_CIRCLE) { do Shapes.draw_circle_outline(x1 + 8, y1 + 6, x2 - 8, y2 - 6); }
-        if (mode = MODE_TRI) { do Shapes.draw_triangle_outline(x1 + 8, y1 + 6, x2 - 8, y2 - 8); }
-        if (mode = MODE_CLEAR) { do ToolsControl.iconClear(x1, y1, x2, y2); }
-
-        // restore default black for the rest of the UI
-        do Screen.setColor(true);
-        return;
-    }
-
-    /**
+        /**
      * Draws the entire toolbar interface, including mode icons and labels.
      * This method should be called once after the object is constructed.
      */
     method void draw() {
-        var int i, cellW, x1, x2;
+        var int mode,loc,r;
 
         // clear toolbar strip (white) and draw a top border line
         do Screen.setColor(false);                          // white
@@ -143,23 +98,188 @@ class ToolsControl {
         do Screen.setColor(true);                           // black
         do Screen.drawLine(0, TOOL_Y1 - 1, 511, TOOL_Y1 - 1);
 
-        // cell width (integer division)
-        let cellW = 512 / NUM_BTNS;
+        do drawPen((32*BTN_TOP) + (btn_locs[0]/16)); // mode pen
+        do drawEraser((32*BTN_TOP) + (btn_locs[1]/16)); // mode eraser
+        do drawRectangle((32*BTN_TOP) + (btn_locs[2]/16)); // mode rectangle
+        do drawCircle((32*BTN_TOP) + (btn_locs[3]/16)); // mode circle
+        do drawTriangle((32*BTN_TOP) + (btn_locs[4]/16)); // more triangle
+        do drawClear((32*BTN_TOP) + (btn_locs[5]/16)); // clear
 
-        // draw each button
-        let i = 0;
-        while (i < NUM_BTNS) {
-            let x1 = i * cellW + BTN_PAD;
-            let x2 = (i + 1) * cellW - BTN_PAD - 1;
-            do ToolsControl.drawButton(i, x1, BTN_TOP, x2, BTN_BOT, (i = currentMode));
-            let i = i + 1;
-        }
+        do drawBorder(0,true);
 
         // leave color black as default
         do Screen.setColor(true);
+
+       return;
+    }
+
+    method void drawBorder(int mode, boolean selected) {
+        var int x1, x2;
+        var int y1, y2;
+
+        let x1 = btn_locs[mode];
+        let x2 = btn_locs[mode] + BTN_WID;
+
+        if (~(mode = 0)) {let x1 = x1 - 1; let x2 = x2-1;}
+        if (mode = 3) {let x2 = x2 + 1;}
+
+        let y1 = BTN_TOP;
+        let y2 = BTN_BOT;
+
+        
+        // background
+        if (selected) {
+            do Screen.setColor(true);                 
+        } 
+        else
+        {
+            do Screen.setColor(false);
+        } 
+
+        // border only
+        do Screen.drawLine(x1, y1, x2, y1);
+        do Screen.drawLine(x2, y1, x2, y2);
+        do Screen.drawLine(x2, y2, x1, y2);
+        do Screen.drawLine(x1, y2, x1, y1);
+
         return;
     }
 
+    method void drawPen(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 384);
+        do Memory.poke(memAddress+64, 576);
+        do Memory.poke(memAddress+96, 1056);
+        do Memory.poke(memAddress+128, 2016);
+        do Memory.poke(memAddress+160, 1056);
+        do Memory.poke(memAddress+192, 1056);
+        do Memory.poke(memAddress+224, 1056);
+        do Memory.poke(memAddress+256, 1056);
+        do Memory.poke(memAddress+288, 1056);
+        do Memory.poke(memAddress+320, 1056);
+        do Memory.poke(memAddress+352, 2016);
+        do Memory.poke(memAddress+384, 1056);
+        do Memory.poke(memAddress+416, 1056);
+        do Memory.poke(memAddress+448, 2016);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void drawEraser(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 96);
+        do Memory.poke(memAddress+64, 144);
+        do Memory.poke(memAddress+96, 456);
+        do Memory.poke(memAddress+128, 996);
+        do Memory.poke(memAddress+160, 2034);
+        do Memory.poke(memAddress+192, 4090);
+        do Memory.poke(memAddress+224, 6140);
+        do Memory.poke(memAddress+256, 9208);
+        do Memory.poke(memAddress+288, 8688);
+        do Memory.poke(memAddress+320, 8416);
+        do Memory.poke(memAddress+352, 4160);
+        do Memory.poke(memAddress+384, 2176);
+        do Memory.poke(memAddress+416, 1792);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void drawRectangle(int location) {
+        var int memAddress;
+
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 0);
+        do Memory.poke(memAddress+96, 16382);
+        do Memory.poke(memAddress+128, 8194);
+        do Memory.poke(memAddress+160, 8194);
+        do Memory.poke(memAddress+192, 8194);
+        do Memory.poke(memAddress+224, 8194);
+        do Memory.poke(memAddress+256, 8194);
+        do Memory.poke(memAddress+288, 8194);
+        do Memory.poke(memAddress+320, 8194);
+        do Memory.poke(memAddress+352, 16382);
+        do Memory.poke(memAddress+384, 0);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void drawCircle(int location) {
+        var int memAddress;
+
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 2016);
+        do Memory.poke(memAddress+64, 6168);
+        do Memory.poke(memAddress+96, 8196);
+        do Memory.poke(memAddress+128, 16386);
+        do Memory.poke(memAddress+160, 16386);
+        do Memory.poke(memAddress+192, -32767);
+        do Memory.poke(memAddress+224, -32767);
+        do Memory.poke(memAddress+256, -32767);
+        do Memory.poke(memAddress+288, -32767);
+        do Memory.poke(memAddress+320, -32767);
+        do Memory.poke(memAddress+352, 16386);
+        do Memory.poke(memAddress+384, 16386);
+        do Memory.poke(memAddress+416, 8196);
+        do Memory.poke(memAddress+448, 6168);
+        do Memory.poke(memAddress+480, 2016);
+        return;
+    }
+
+    method void drawTriangle(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 128);
+        do Memory.poke(memAddress+64, 320);
+        do Memory.poke(memAddress+96, 320);
+        do Memory.poke(memAddress+128, 544);
+        do Memory.poke(memAddress+160, 544);
+        do Memory.poke(memAddress+192, 1040);
+        do Memory.poke(memAddress+224, 1040);
+        do Memory.poke(memAddress+256, 2056);
+        do Memory.poke(memAddress+288, 2056);
+        do Memory.poke(memAddress+320, 4100);
+        do Memory.poke(memAddress+352, 4100);
+        do Memory.poke(memAddress+384, 8194);
+        do Memory.poke(memAddress+416, 8194);
+        do Memory.poke(memAddress+448, 16382);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void drawClear(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, -16381);
+        do Memory.poke(memAddress+32, -8185);
+        do Memory.poke(memAddress+64, 28686);
+        do Memory.poke(memAddress+96, 14364);
+        do Memory.poke(memAddress+128, 7224);
+        do Memory.poke(memAddress+160, 3696);
+        do Memory.poke(memAddress+192, 2016);
+        do Memory.poke(memAddress+224, 960);
+        do Memory.poke(memAddress+256, 960);
+        do Memory.poke(memAddress+288, 2016);
+        do Memory.poke(memAddress+320, 3696);
+        do Memory.poke(memAddress+352, 7224);
+        do Memory.poke(memAddress+384, 14364);
+        do Memory.poke(memAddress+416, 28686);
+        do Memory.poke(memAddress+448, -8185);
+        do Memory.poke(memAddress+480, -16381);
+        return;
+    }
+
+    
 
 // ############################################################################################
 
@@ -171,11 +291,11 @@ class ToolsControl {
      * @param newMode The integer representing the new mode to select.
      */
     method void change_mode(int newMode) {
-        if (newMode < 7 & newMode > -1) { 
+        if (newMode < NUM_BTNS + 1 & newMode > -1) { 
+            do drawBorder(currentMode,false);
             let currentMode = newMode;
-            do draw();
+            do drawBorder(currentMode,true);
         }
-        
         return;
     }
 
@@ -209,6 +329,11 @@ class ToolsControl {
     method void updateSize(int newSize) {
         return;
     }
+
+// ############################################################################################
+    
+
+
 
 // ############################################################################################
 
