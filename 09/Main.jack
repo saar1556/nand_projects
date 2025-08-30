@@ -36,7 +36,9 @@
 
 class Main {
 
-  static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECTANGLE,CIRCLE,TRIANGLE,CLEAR,END;
+  static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECTANGLE ,CIRCLE ,TRIANGLE;
+  static int CLEAR, ESC, FULL, EMPTY, ENTER, INCREASE, DECREASE;
+  static boolean endProgram;
 
   /**
   * The main function of the program. It initializes the drawing application,
@@ -51,7 +53,532 @@ class Main {
   * input to control the application.
   */
 
-  static boolean endProgram;
+  function void clearBottomLine() {
+    var int col;
+    let col = 0;
+    while (col < 64) {
+        do Output.moveCursor(col, 22);
+        do Output.printChar(" ");
+        let col = col + 1;
+    }
+
+    return;
+  }
+  
+  function void printFullOrEmpty() {
+    var String s;
+    let s = String.new(54);
+
+    do s.appendChar("P");
+    do s.appendChar("r");
+    do s.appendChar("e");
+    do s.appendChar("s");
+    do s.appendChar("s");
+    do s.appendChar(" ");
+    do s.appendChar("f");
+    do s.appendChar(" ");
+    do s.appendChar("f");
+    do s.appendChar("o");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("a");
+    do s.appendChar(" ");
+    do s.appendChar("f");
+    do s.appendChar("u");
+    do s.appendChar("l");
+    do s.appendChar("l");
+    do s.appendChar(" ");
+    do s.appendChar("s");
+    do s.appendChar("h");
+    do s.appendChar("a");
+    do s.appendChar("p");
+    do s.appendChar("e");
+    do s.appendChar(" ");
+    do s.appendChar("o");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar(" ");
+    do s.appendChar("f");
+    do s.appendChar("o");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("a");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar("m");
+    do s.appendChar("p");
+    do s.appendChar("t");
+    do s.appendChar("y");
+    do s.appendChar(" ");
+    do s.appendChar("s");
+    do s.appendChar("h");
+    do s.appendChar("a");
+    do s.appendChar("p");
+    do s.appendChar("e");
+
+    do Output.moveCursor(0, 22);
+    do Output.printString(s);
+
+    return;
+  }
+
+  function void printRectangleInstructions() {
+    var String s;
+    let s = String.new(64);
+    
+    do s.appendChar("P");
+    do s.appendChar("l");
+    do s.appendChar("a");
+    do s.appendChar("c");
+    do s.appendChar("e");
+    do s.appendChar(" ");
+    do s.appendChar("p");
+    do s.appendChar("e");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("o");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar("p");
+    do s.appendChar("-");
+    do s.appendChar("l");
+    do s.appendChar("e");
+    do s.appendChar("f");
+    do s.appendChar("t");
+    do s.appendChar(" ");
+    do s.appendChar("&");
+    do s.appendChar(" ");
+    do s.appendChar("b");
+    do s.appendChar("o");
+    do s.appendChar("t");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar("m");
+    do s.appendChar("-");
+    do s.appendChar("r");
+    do s.appendChar("i");
+    do s.appendChar("g");
+    do s.appendChar("h");
+    do s.appendChar("t");
+    do s.appendChar(" ");
+    do s.appendChar("c");
+    do s.appendChar("o");
+    do s.appendChar("r");
+    do s.appendChar("n");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar("s");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("E");
+    do s.appendChar("n");
+    do s.appendChar("t");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar(" ");
+    do s.appendChar("s");
+    do s.appendChar("a");
+    do s.appendChar("m");
+    do s.appendChar("p");
+    do s.appendChar("l");
+    do s.appendChar("e");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("E");
+    do s.appendChar("S");
+    do s.appendChar("C");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar("x");
+    do s.appendChar("i");
+    do s.appendChar("t");
+
+    do Output.moveCursor(0, 22);
+    do Output.printString(s);
+    return;
+  }
+
+  function void printCircleInstructions() {
+    var String s;
+    let s = String.new(64);
+    
+    do s.appendChar("P");
+    do s.appendChar("l");
+    do s.appendChar("a");
+    do s.appendChar("c");
+    do s.appendChar("e");
+    do s.appendChar(" ");
+    do s.appendChar("p");
+    do s.appendChar("e");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("o");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("c");
+    do s.appendChar("e");
+    do s.appendChar("n");
+    do s.appendChar("t");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("&");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar("d");
+    do s.appendChar("g");
+    do s.appendChar("e");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("E");
+    do s.appendChar("n");
+    do s.appendChar("t");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar(" ");
+    do s.appendChar("s");
+    do s.appendChar("a");
+    do s.appendChar("m");
+    do s.appendChar("p");
+    do s.appendChar("l");
+    do s.appendChar("e");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("E");
+    do s.appendChar("S");
+    do s.appendChar("C");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar("x");
+    do s.appendChar("i");
+    do s.appendChar("t");
+
+    do Output.moveCursor(0, 22);
+    do Output.printString(s);
+    return;
+  }
+
+  function void printTriangleInstructions() {
+    var String s;
+    let s = String.new(64);
+    
+    do s.appendChar("P");
+    do s.appendChar("l");
+    do s.appendChar("a");
+    do s.appendChar("c");
+    do s.appendChar("e");
+    do s.appendChar(" ");
+    do s.appendChar("p");
+    do s.appendChar("e");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("o");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("v");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar("t");
+    do s.appendChar("i");
+    do s.appendChar("c");
+    do s.appendChar("e");
+    do s.appendChar("s");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("E");
+    do s.appendChar("n");
+    do s.appendChar("t");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar(" ");
+    do s.appendChar("s");
+    do s.appendChar("a");
+    do s.appendChar("m");
+    do s.appendChar("p");
+    do s.appendChar("l");
+    do s.appendChar("e");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar("a");
+    do s.appendChar("c");
+    do s.appendChar("h");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("E");
+    do s.appendChar("S");
+    do s.appendChar("C");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("o");
+    do s.appendChar(" ");
+    do s.appendChar("e");
+    do s.appendChar("x");
+    do s.appendChar("i");
+    do s.appendChar("t");
+
+    do Output.moveCursor(0, 22);
+    do Output.printString(s);
+    return; 
+  }
+
+  function void printShapeInstructions(boolean isRectangle, boolean isCircle, boolean isTriangle) {
+    do Main.clearBottomLine();
+    if (isRectangle) { do Main.printRectangleInstructions(); }
+    if (isCircle) { do Main.printCircleInstructions(); }
+    if (isTriangle) { do Main.printTriangleInstructions(); }
+    return;
+  }
+
+  function void printKeyInstructions() {
+    var String s;
+    let s = String.new(64);
+
+    do s.appendChar("b");
+    do s.appendChar("=");
+    do s.appendChar("d");
+    do s.appendChar("r");
+    do s.appendChar("a");
+    do s.appendChar("w");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("w");
+    do s.appendChar("=");
+    do s.appendChar("e");
+    do s.appendChar("r");
+    do s.appendChar("a");
+    do s.appendChar("s");
+    do s.appendChar("e");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("r");
+    do s.appendChar("=");
+    do s.appendChar("r");
+    do s.appendChar("e");
+    do s.appendChar("c");
+    do s.appendChar("t");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("c");
+    do s.appendChar("=");
+    do s.appendChar("c");
+    do s.appendChar("i");
+    do s.appendChar("r");
+    do s.appendChar("c");
+    do s.appendChar("l");
+    do s.appendChar("e");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("t");
+    do s.appendChar("=");
+    do s.appendChar("t");
+    do s.appendChar("r");
+    do s.appendChar("i");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("+");
+    do s.appendChar("/");
+    do s.appendChar("-");
+    do s.appendChar(" ");
+    do s.appendChar("p");
+    do s.appendChar("e");
+    do s.appendChar("n");
+    do s.appendChar(" ");
+    do s.appendChar("s");
+    do s.appendChar("i");
+    do s.appendChar("z");
+    do s.appendChar("e");
+    do s.appendChar(",");
+    do s.appendChar(" ");
+    do s.appendChar("x");
+    do s.appendChar("=");
+    do s.appendChar("c");
+    do s.appendChar("l");
+    do s.appendChar("e");
+    do s.appendChar("a");
+    do s.appendChar("r");
+
+    do Output.moveCursor(0, 22);
+    do Output.printString(s);
+
+    return;
+  }
+
+function void printStartInstruction() {
+    var String msg;
+    
+    let msg = String.new(49); 
+
+    do msg.appendChar("M");
+    do msg.appendChar("o");
+    do msg.appendChar("v");
+    do msg.appendChar("e");
+    do msg.appendChar(" ");
+    do msg.appendChar("t");
+    do msg.appendChar("h");
+    do msg.appendChar("e");
+    do msg.appendChar(" ");
+    do msg.appendChar("p");
+    do msg.appendChar("e");
+    do msg.appendChar("n");
+    do msg.appendChar(" ");
+    do msg.appendChar("u");
+    do msg.appendChar("s");
+    do msg.appendChar("i");
+    do msg.appendChar("n");
+    do msg.appendChar("g");
+    do msg.appendChar(" ");
+    do msg.appendChar("t");
+    do msg.appendChar("h");
+    do msg.appendChar("e");
+    do msg.appendChar(" ");
+    do msg.appendChar("a");
+    do msg.appendChar("r");
+    do msg.appendChar("r");
+    do msg.appendChar("o");
+    do msg.appendChar("w");
+    do msg.appendChar(" ");
+    do msg.appendChar("k");
+    do msg.appendChar("e");
+    do msg.appendChar("y");
+    do msg.appendChar("s");
+    do msg.appendChar(" ");
+    do msg.appendChar("o");
+    do msg.appendChar("n");
+    do msg.appendChar(" ");
+    do msg.appendChar("y");
+    do msg.appendChar("o");
+    do msg.appendChar("u");
+    do msg.appendChar("r");
+    do msg.appendChar(" ");
+    do msg.appendChar("k");
+    do msg.appendChar("e");
+    do msg.appendChar("y");
+    do msg.appendChar("b");
+    do msg.appendChar("o");
+    do msg.appendChar("a");
+    do msg.appendChar("r");
+    do msg.appendChar("d");
+    do msg.appendChar(".");
+
+    do Output.moveCursor(11, 7); 
+    do Output.printString(msg); 
+    do msg.dispose();
+
+    return;
+}
+
+  // Determines whether the shape is full or empty
+  function boolean emptyOrFull() {
+
+    var int key;
+    var boolean loopEnd,full;
+    var String str;
+
+    do Main.printFullOrEmpty();
+    
+    let loopEnd = false;
+    while (~loopEnd) {
+      let key = Keyboard.keyPressed();
+      if (key = FULL) {
+        let full = true;
+        let loopEnd = true;
+      }
+      if (key = EMPTY) {
+        let full = false;
+        let loopEnd = true;
+      }
+    }
+
+  do Main.clearBottomLine();
+    return full;
+  }
+
+  function void shapesMode(
+          int vertices, boolean rectangle, boolean circle, boolean triangle, Pen p) {
+
+    var int counter, key, temp;
+    var Array xs, ys;
+    var boolean full, selectedColor, esc;
+    var Pen pen;
+
+    do pen.startDrawing();
+    let full = Main.emptyOrFull();
+    let counter = 0;
+    let xs = Array.new(vertices);
+    let ys = Array.new(vertices);
+    let selectedColor = p.getColor();
+    do Main.printShapeInstructions(rectangle, circle, triangle);
+
+    while (counter < vertices) {
+      let key = Keyboard.keyPressed();
+
+      if (key = UP)        { do pen.moveUp();    }
+      if (key = DOWN)      { do pen.moveDown();  } 
+      if (key = LEFT)      { do pen.moveLeft();  } 
+      if (key = RIGHT)     { do pen.moveRight(); }  
+      if (key = ENTER) {
+        let temp = p.getX();
+        let xs[counter] = temp;
+        let temp = p.getY();
+        let ys[counter] = temp;
+        do Screen.setColor(selectedColor);
+        do Screen.drawPixel(xs[counter], ys[counter]);
+        let counter = counter + 1;
+      }
+      if (key = ESC) {
+        let esc = true;
+      }
+    }
+
+    do Main.clearBottomLine();
+
+    if (rectangle & ~esc) {
+      if (full) {
+        do Shapes.draw_rectangle(xs[0], ys[0], xs[1], ys[1], selectedColor);
+      }
+      if (~full) {
+        do Shapes.draw_rectangle_outline(xs[0], ys[0], xs[1], ys[1], selectedColor);
+      }
+    }
+
+    if (circle & ~esc) {
+      if (full) {
+        do Shapes.draw_circle(xs[0], ys[0], xs[1], ys[1], selectedColor);
+      }
+      if (~full) {
+        do Shapes.draw_circle_outline(xs[0], ys[0], xs[1], ys[1], selectedColor);
+      }
+    }
+
+    if (triangle & ~esc) {
+      if (full) {
+        do Shapes.draw_triangle(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], selectedColor);
+      }
+      if (~full) {
+        do Shapes.draw_triangle_outline(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], selectedColor);
+      }
+    }
+    return;
+  }
 
   function void main() {
     var Pen pen;
@@ -59,53 +586,93 @@ class Main {
     var int key;
     var boolean exit;
     
-    let UP        = 131;
-    let DOWN      = 133;
-    let LEFT      = 130;
-    let RIGHT     = 132;
-    let PEN       = 49;
-    let ERASE     = 50;
-    let RECTANGLE = 51;
-    let CIRCLE    = 52;
-    let TRIANGLE  = 53;
-    let CLEAR     = 54;
-    let END       = 113;
+    let UP        = 131; // up arrow
+    let DOWN      = 133; // down arrow
+    let LEFT      = 130; // left arrow
+    let RIGHT     = 132; // right arrow
+    let PEN       = 98;  // "b" (black)
+    let ERASE     = 119; // "w" (wight)
+    let RECTANGLE = 114; // "r" (rectangle)
+    let CIRCLE    = 99;  // "c" (circle)
+    let TRIANGLE  = 116; // "t" (triangle)
+    let CLEAR     = 120; // "x"
+    let ESC       = 27;  // "ESC"
+    let FULL      = 102; // "f" (full)
+    let EMPTY     = 101; // "e" (empty)
+    let ENTER     = 13;  // "enter"
+    let INCREASE  = 43;  // "+" 
+    let DECREASE  = 45;  // "-"
 
-    let pen = Pen.new(50, 50, 10);
+
+    let pen = Pen.new(0, 0, 10);
     do Screen.clearScreen();
-    do pen.drawPen();
+    do Main.printStartInstruction();
+    do Screen.clearScreen();
     let tb = ToolsControl.new();
+    do pen.drawPen();
 
-    ///**
     let key = 0;
     let exit = false;
 
     while (~exit) {
-        // wait for a key
-        while (key = 0) {
-            let key = Keyboard.keyPressed();
-        }
 
-        if (key = UP)        { do pen.moveUp();    }   // up arrow
-        if (key = DOWN)      { do pen.moveDown();  }   // down arrow
-        if (key = LEFT)      { do pen.moveLeft();  }   // left arrow
-        if (key = RIGHT)     { do pen.moveRight(); }   // right arrow
+      do Main.printKeyInstructions();
+      let key = Keyboard.keyPressed();
 
-        if (key = PEN)       { do tb.change_mode(0); } // '1'
-        if (key = ERASE)     { do tb.change_mode(1); } // '2'
-        if (key = RECTANGLE) { do tb.change_mode(2); } // '3'
-        if (key = CIRCLE)    { do tb.change_mode(3); } // '4'
-        if (key = TRIANGLE)  { do tb.change_mode(4); } // '5'
-        if (key = CLEAR)     { do tb.change_mode(5); } // '6'
+      if (key = UP)        { do pen.moveUp();    }
+      if (key = DOWN)      { do pen.moveDown();  } 
+      if (key = LEFT)      { do pen.moveLeft();  } 
+      if (key = RIGHT)     { do pen.moveRight(); }  
 
-        if (key = END)       { let exit = true; }      // e.g., 'q' or Esc, per your constant
+      if (key = PEN) { 
+          do tb.change_mode(0);
+          do pen.startDrawing();
+          do pen.setColor(true);
+      } 
 
-        let key = 0;   // reset so inner loop waits for the next press
+      if (key = ERASE) { 
+          do tb.change_mode(1);
+          do pen.startDrawing();
+          do pen.setColor(false); 
+      }
+
+      if (key = RECTANGLE) { 
+          do tb.change_mode(2); 
+          do Main.shapesMode(2, true, false, false, pen);
+      }
+
+      if (key = CIRCLE) { 
+          do tb.change_mode(3);
+          do Main.shapesMode(2, false, true, false, pen);
+      } 
+
+      if (key = TRIANGLE) { 
+          do tb.change_mode(4);
+          do Main.shapesMode(3, false, false, true, pen);
+      } 
+
+      if (key = CLEAR) { 
+          do tb.change_mode(5); 
+          do Screen.setColor(false);
+          do Screen.drawRectangle(0, 0, 511, 218);
+      }
+
+      if (key = INCREASE) {
+          do pen.increaseSize();
+      }
+
+      if (key = DECREASE) {
+          do pen.decreaseSize();
+      }
+
+      if (key = ESC) { let exit = true; }  
+
+      do Sys.wait(50);
     }
 
     do pen.dispose();
     do tb.dispose();
-    //*/
+
     return;
   }
   
