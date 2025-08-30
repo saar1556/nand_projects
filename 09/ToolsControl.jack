@@ -71,7 +71,6 @@ class ToolsControl {
         return this;
     }
 
-
     method void calculateLocations() {
         var int i;
         let i = 0;
@@ -98,14 +97,15 @@ class ToolsControl {
         do Screen.setColor(true);                           // black
         do Screen.drawLine(0, TOOL_Y1 - 1, 511, TOOL_Y1 - 1);
 
-        do drawPen((32*BTN_TOP) + (btn_locs[0]/16)); // mode pen
-        do drawEraser((32*BTN_TOP) + (btn_locs[1]/16)); // mode eraser
-        do drawRectangle((32*BTN_TOP) + (btn_locs[2]/16)); // mode rectangle
-        do drawCircle((32*BTN_TOP) + (btn_locs[3]/16)); // mode circle
-        do drawTriangle((32*BTN_TOP) + (btn_locs[4]/16)); // more triangle
-        do drawClear((32*BTN_TOP) + (btn_locs[5]/16)); // clear
+        // drawing icons
+        do drawPen((32*BTN_TOP) + (btn_locs[MODE_PEN]/16)); // mode pen
+        do drawEraser((32*BTN_TOP) + (btn_locs[MODE_ERASE]/16)); // mode eraser
+        do drawRectangle((32*BTN_TOP) + (btn_locs[MODE_RECT]/16)); // mode rectangle
+        do drawCircle((32*BTN_TOP) + (btn_locs[MODE_CIRCLE]/16)); // mode circle
+        do drawTriangle((32*BTN_TOP) + (btn_locs[MODE_TRI]/16)); // more triangle
+        do drawClear((32*BTN_TOP) + (btn_locs[MODE_CLEAR]/16)); // clear
 
-        do drawBorder(0,true);
+        do drawBorder(MODE_PEN,true);
 
         // leave color black as default
         do Screen.setColor(true);
@@ -120,21 +120,17 @@ class ToolsControl {
         let x1 = btn_locs[mode];
         let x2 = btn_locs[mode] + BTN_WID;
 
-        if (~(mode = 0)) {let x1 = x1 - 1; let x2 = x2-1;}
-        if (mode = 3) {let x2 = x2 + 1;}
+        // adjusting unique looking logos
+        if (~(mode = MODE_PEN)) {let x1 = x1 - 1; let x2 = x2-1;}
+        if (mode = MODE_CIRCLE) {let x2 = x2 + 1;}
 
         let y1 = BTN_TOP;
         let y2 = BTN_BOT;
 
         
-        // background
-        if (selected) {
-            do Screen.setColor(true);                 
-        } 
-        else
-        {
-            do Screen.setColor(false);
-        } 
+        // border color
+        if (selected) { do Screen.setColor(true); } 
+        else { do Screen.setColor(false); } 
 
         // border only
         do Screen.drawLine(x1, y1, x2, y1);
