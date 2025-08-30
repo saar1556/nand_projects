@@ -36,8 +36,8 @@
  */
 class Pen {
     
-    static int screenWidth, screenHeight, resizeIncrement;
-    static int resizeDecrement, minWidth, maxWidth, SCREEN;
+    static int screenWidth, screenHeight;
+    static int resizeDecrement, resizeIncrement, minWidth, maxWidth, SCREEN;
     field int x, y; // screen location of the pointer's top-left corner
     field int width; // line width in pixels
     field boolean isDrawingMode; // Indicates if the pen is in drawing (true) or erasing (false) mode 
@@ -122,13 +122,14 @@ class Pen {
         do Screen.drawRectangle(x, y, x + width, y + width);
 
         // draw internal white square outline
-        do Screen.setColor(false); // white
-        do Screen.drawRectangle(x + 1, y + 1, x + width - 1, y + width - 1);
-        if (width > 6) {
-            do Screen.setColor(true);
-            do Screen.drawRectangle(x + 3, y + 3, x + width - 3, y + width - 3);
+        if (width > 2) {
+            do Screen.setColor(false); // white
+            do Screen.drawRectangle(x + 1, y + 1, x + width - 1, y + width - 1);
+            if (width > 6) {
+                do Screen.setColor(true);
+                do Screen.drawRectangle(x + 3, y + 3, x + width - 3, y + width - 3);
+            }
         }
-        
         do Screen.setColor(true);
         return;
     }
@@ -198,8 +199,8 @@ class Pen {
 
     /** Sets the pen to drawing mode (black). */
     method void startDrawing() {
-        do Screen.setColor(true);
-        let color = true; 
+        // do Screen.setColor(true);
+        // let color = true; 
         let isDrawingMode = true; 
         return;
     }
@@ -207,8 +208,8 @@ class Pen {
 
     /** Sets the pen to no drawing mode (white). */
     method void stopDrawing() {
-        do Screen.setColor(false);
-        let color = false;
+        // do Screen.setColor(false);
+        // let color = false;
         let isDrawingMode = false;
         return;
     }

@@ -20,49 +20,141 @@
 class Shapes {
     
     //* Draws a filled rectangle on the screen, defined by two opposite corners. */
-    function void draw_rectangle (int x1, int y1, int x2, int y2) {
-        do Screen.setColor(true);
+    function void draw_rectangle (int x1, int y1, int x2, int y2, boolean color) {
+
+        do Screen.setColor(color);
         do Screen.drawRectangle(x1, y1, x2, y2);
         return;
     }
 
-    //* Draws a filled circle on the screen, defined by a bounding box. */
-    function void draw_circle (int x1, int y1, int x2, int y2) {
+    //* Draws a filled circle on the screen, defined by a middle point and edge point. */
+    function void draw_circle (int middleX, int middleY, int edgeX, int edgeY, boolean color) {
+        
         var int radius;
-        var int x, y;
+        var int x;
+        var int dx, dy, rightEdge;
+        var int y;
+        var int topY, bottomY;
 
-        let x = (x1 + x2) / 2;
-        let y = (y1 + y2) / 2;
-        let radius = Math.min((x2 - x1) / 2, (y2 - y1) / 2);
+        do Screen.setColor(color);
 
-        do Screen.setColor(true);
-        if (radius > 0) {
-            do Screen.drawCircle(x, y, radius);
+        let radius = Math.sqrt(((middleX - edgeX) * (middleX - edgeX)) + 
+                               ((middleY - edgeY) * (middleY - edgeY)));
+
+        let x = Math.max((middleX - radius), 0);
+        let rightEdge = Math.min((middleX + radius + 1), 511);
+        while (x < rightEdge) {
+            let dx = x - middleX;
+            let dy = ((radius * radius) - (dx * dx));   // (radius^2 - (x-middleX)^2)
+            if (dy > -1) {
+                let y = Math.sqrt(dy);
+
+                // Drawing the line between two symmetrical points or the screen edge
+                let bottomY = Math.min((middleY + y), 219);
+                let topY = Math.max((middleY - y), 0);
+                do Screen.drawLine(x, bottomY, x, topY);
+            }
+            let x = x + 1;
         }
-
         return;
+    }
+
+    function void sortByY (Array xs, Array ys) {
+
+        var int i, j, temp;
+    
+        let i = 0;
+        while (i < 3) {
+            let j = i + 1;
+            while (j < 3) {
+                if (ys[j] < ys[i]) {
+
+                    let temp = ys[i];
+                    let ys[i] = ys[j];
+                    let ys[j] = temp;
+
+                    let temp = xs[i];
+                    let xs[i] = xs[j];
+                    let xs[j] = temp;
+                }
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+
+    function int interpolateX(int x1, int y1, int x2, int y2, int y) {
+
+        if (y2 = y1) {
+        return x1; // Horizontal line, return one of the X's
+        }
+        return x1 + (((y - y1) * (x2 - x1)) / (y2 - y1));
+
     }
   
     //* Draws a filled triangle, defined by its three vertices. */
-    function void draw_triangle (int x1, int y1, int x2, int y2) {
-        var int x3, y3;
-        let x3 = (x1 + x2)/2;
-        let y3 = y2;
+    function void draw_triangle (int x1, int y1, int x2, int y2, int x3, int y3, boolean color) {
+        
+        var Array xs, ys;
+        var int y, xLeft, xRight, temp;
 
-        do Screen.setColor(true);
-        do Screen.drawLine(x1, y1, x2, y2);
-        while (Math.abs(y3 - y1) > 0) {
-            do Screen.drawLine(x2, y2, x3, y3);
-            do Screen.drawLine(x3, y3, x1, y1);
-            if (y3 > y1) {let y3 = y3 - 1; }
-            if (y3 < y1) {let y3 = y3 + 1; }
+        do Screen.setColor(color);
+
+        // Saving the points in arrays to make them easy to sort
+        let xs = Array.new(3);
+        let ys = Array.new(3);
+        let xs[0] = x1;
+        let ys[0] = y1;
+        let xs[1] = x2;
+        let ys[1] = y2;
+        let xs[2] = x3;
+        let ys[2] = y3;
+
+        do Shapes.sortByY(xs, ys);
+
+        //points sorted by Y:
+        // (xs[0],ys[0]) - top point
+        // (xs[1],ys[1]) - middle point
+        // (xs[2],ys[2]) - bottom point
+
+        // Top: From the top row to the middle
+        let y = ys[0];
+        while (y < (ys[1] + 1)) {
+            let xLeft  = Shapes.interpolateX(xs[0], ys[0], xs[2], ys[2], y);
+            let xRight = Shapes.interpolateX(xs[0], ys[0], xs[1], ys[1], y);
+            if (xLeft > xRight) {
+                let temp = xLeft;
+                let xLeft = xRight;
+                let xRight = temp;
+            }
+            do Screen.drawLine(xLeft, y, xRight, y);
+            let y = y + 1;
         }
+
+        // Bottom: from the middle to the bottom
+        while (y < (ys[2] + 1)) {
+            let xLeft  = Shapes.interpolateX(xs[0], ys[0], xs[2], ys[2], y);
+            let xRight = Shapes.interpolateX(xs[1], ys[1], xs[2], ys[2], y);
+            if (xLeft > xRight) {
+                let temp = xLeft;
+                let xLeft = xRight;
+                let xRight = temp;
+            }
+            do Screen.drawLine(xLeft, y, xRight, y);
+            let y = y + 1;
+        }
+
+        do Array.dispose(xs);
+        do Array.dispose(ys);
         return;
     }
 
     //* Draws the outline of a rectangle. */
-    function void draw_rectangle_outline (int x1, int y1, int x2, int y2) {
-        do Screen.setColor(true);
+    function void draw_rectangle_outline (int x1, int y1, int x2, int y2, boolean color) {
+        
+        do Screen.setColor(color);
         do Screen.drawLine(x1, y1, x2, y1);
         do Screen.drawLine(x2, y1, x2, y2);
         do Screen.drawLine(x2, y2, x1, y2);
@@ -71,21 +163,43 @@ class Shapes {
     }
 
     //* Draws the outline of a circle. */
-    function void draw_circle_outline (int x1, int x2, int y1, int y2) {
-            do Screen.setColor(true);
-            do Shapes.draw_circle(x1,y1,x2,y2);
-            do Screen.setColor(false);
-            do Shapes.draw_circle(x1,y1,x2,y2);
-            return;
+    function void draw_circle_outline (int middleX, int middleY, int edgeX, int edgeY, boolean color) {
+        
+        var int radius;
+        var int x;
+        var int dx, dy, rightEdge;
+        var int y;
+
+        do Screen.setColor(color);
+
+        let radius = Math.sqrt(((middleX - edgeX) * (middleX - edgeX)) + 
+                               ((middleY - edgeY) * (middleY - edgeY)));
+
+        let x = Math.max((middleX - radius), 0);
+        let rightEdge = Math.min((middleX + radius + 1), 511);
+        while (x < rightEdge) {
+            let dx = x - middleX;
+            let dy = ((radius * radius) - (dx * dx));   // (radius^2 - (x-middleX)^2)
+            if (dy > -1) {
+                let y = Math.sqrt(dy);
+
+                // Drawing the two symmetrical points
+                if ((middleY + y) < 219) {
+                    do Screen.drawPixel(x, middleY + y);
+                }
+                if ((middleY - y) > -1) {
+                do Screen.drawPixel(x, middleY - y);
+                }
+            }
+            let x = x + 1;
+        }
+        return;
     }
 
     //* Draws the outline of a triangle. */
-    function void draw_triangle_outline (int x1, int y1, int x2, int y2) {
-            var int x3, y3;
-            let x3 = (x1 + x2)/2;
-            let y3 = y2;
+    function void draw_triangle_outline (int x1, int y1, int x2, int y2, int x3, int y3, boolean color) {
 
-            do Screen.setColor(true);
+            do Screen.setColor(color);
             do Screen.drawLine(x1, y1, x2, y2);
             do Screen.drawLine(x2, y2, x3, y3);
             do Screen.drawLine(x3, y3, x1, y1);
