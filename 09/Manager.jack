@@ -6,7 +6,7 @@ class Manager {
 
     // Main key codes
     static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECTANGLE ,CIRCLE ,TRIANGLE;
-    static int CLEAR, ESC, INCREASE, DECREASE;
+    static int CLEAR, ESC, QUIT, INCREASE, DECREASE;
     
     // Secondary key codes
     static int FULL, EMPTY, ENTER;
@@ -18,7 +18,7 @@ class Manager {
      * Waits for the user to choose between FULL ("F") or EMPTY ("E") shape mode. 
      * Returns true if FULL is chosen, false if EMPTY is chosen.
      */
-    function boolean emptyOrFull() {
+    function boolean emptyOrFull(boolean out) {
 
         var int key;
         var boolean loopEnd,full;
@@ -28,12 +28,17 @@ class Manager {
             do Sys.wait(50);
             let key = Keyboard.keyPressed();
             if (key = FULL) {
-            let full = true;
-            let loopEnd = true;
+                let full = true;
+                let loopEnd = true;
             }
             if (key = EMPTY) {
-            let full = false;
-            let loopEnd = true;
+                let full = false;
+                let loopEnd = true;
+            }
+            if (key = QUIT) {
+                let full = false;
+                let loopEnd = true;
+                let out = true;
             }
         }
         return full;
@@ -92,14 +97,14 @@ class Manager {
         else {let vertices = TRIANGLEv;}
 
         do p.stopDrawing();
+        let esc = false;
 
         // Ask the user if the shape should be full or empty
-        let full = Manager.emptyOrFull();
+        let full = Manager.emptyOrFull(esc);
 
         let counter = 0;
         let xs = Array.new(vertices);
         let ys = Array.new(vertices);
-        let esc = false;
         let pressed = false;
 
         // Collect all required vertices
@@ -129,8 +134,8 @@ class Manager {
             }
             
             // Cancel shape mode
-            if (key = ESC) {
-            let esc = true;
+            if (key = QUIT) {
+                let esc = true;
             }
         }
 
@@ -163,6 +168,7 @@ class Manager {
         let TRIANGLE  = 84;  // "T" (triangle)
         let CLEAR     = 88;  // "X"
         let ESC       = 140; // "ESC"
+        let QUIT      = 81;  // "Q"
         let FULL      = 70;  // "F" (full)
         let EMPTY     = 69;  // "E" (empty)
         let ENTER     = 128; // "ENTER"
@@ -185,10 +191,22 @@ class Manager {
             let key = Keyboard.keyPressed();
 
             // Move pen
-            if (key = UP)        { do pen.moveUp();    }
-            if (key = DOWN)      { do pen.moveDown();  } 
-            if (key = LEFT)      { do pen.moveLeft();  } 
-            if (key = RIGHT)     { do pen.moveRight(); }  
+            if (key = UP) {
+                do pen.moveUp();
+                do Sys.wait(8);
+            }
+            if (key = DOWN) { 
+                do pen.moveDown();  
+                do Sys.wait(8);
+            } 
+            if (key = LEFT) { 
+                do pen.moveLeft();
+                do Sys.wait(8);
+            } 
+            if (key = RIGHT) { 
+                do pen.moveRight(); 
+                do Sys.wait(8);
+            }  
 
             // Drawing modes
             if (key = PEN) { 
