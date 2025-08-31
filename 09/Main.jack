@@ -67,7 +67,7 @@ class Main {
   
   function void printFullOrEmpty() {
     var String s;
-    let s = String.new(54);
+    let s = String.new(64);
 
     do s.appendChar("P");
     do s.appendChar("r");
@@ -120,7 +120,7 @@ class Main {
 
     do Output.moveCursor(0, 22);
     do Output.printString(s);
-
+    do s.dispose();
     return;
   }
 
@@ -164,14 +164,6 @@ class Main {
     do s.appendChar("g");
     do s.appendChar("h");
     do s.appendChar("t");
-    do s.appendChar(" ");
-    do s.appendChar("c");
-    do s.appendChar("o");
-    do s.appendChar("r");
-    do s.appendChar("n");
-    do s.appendChar("e");
-    do s.appendChar("r");
-    do s.appendChar("s");
     do s.appendChar(",");
     do s.appendChar(" ");
     do s.appendChar("E");
@@ -179,9 +171,6 @@ class Main {
     do s.appendChar("t");
     do s.appendChar("e");
     do s.appendChar("r");
-    do s.appendChar(" ");
-    do s.appendChar("t");
-    do s.appendChar("o");
     do s.appendChar(" ");
     do s.appendChar("s");
     do s.appendChar("a");
@@ -195,9 +184,6 @@ class Main {
     do s.appendChar("S");
     do s.appendChar("C");
     do s.appendChar(" ");
-    do s.appendChar("t");
-    do s.appendChar("o");
-    do s.appendChar(" ");
     do s.appendChar("e");
     do s.appendChar("x");
     do s.appendChar("i");
@@ -205,6 +191,7 @@ class Main {
 
     do Output.moveCursor(0, 22);
     do Output.printString(s);
+    do s.dispose();
     return;
   }
 
@@ -271,6 +258,7 @@ class Main {
 
     do Output.moveCursor(0, 22);
     do Output.printString(s);
+    do s.dispose();
     return;
   }
 
@@ -337,6 +325,7 @@ class Main {
 
     do Output.moveCursor(0, 22);
     do Output.printString(s);
+    do s.dispose();
     return; 
   }
 
@@ -418,14 +407,14 @@ class Main {
 
     do Output.moveCursor(0, 22);
     do Output.printString(s);
-
+    do s.dispose();
     return;
   }
 
 function void printStartInstruction() {
     var String msg;
     
-    let msg = String.new(49); 
+    let msg = String.new(64); 
 
     do msg.appendChar("M");
     do msg.appendChar("o");
@@ -482,7 +471,6 @@ function void printStartInstruction() {
     do Output.moveCursor(11, 7); 
     do Output.printString(msg); 
     do msg.dispose();
-
     return;
 }
 
@@ -491,12 +479,13 @@ function void printStartInstruction() {
 
     var int key;
     var boolean loopEnd,full;
-    var String str;
 
+    do Main.clearBottomLine();
     do Main.printFullOrEmpty();
     
     let loopEnd = false;
     while (~loopEnd) {
+      do Sys.wait(50);
       let key = Keyboard.keyPressed();
       if (key = FULL) {
         let full = true;
@@ -508,7 +497,7 @@ function void printStartInstruction() {
       }
     }
 
-  do Main.clearBottomLine();
+    do Main.clearBottomLine();
     return full;
   }
 
@@ -527,8 +516,10 @@ function void printStartInstruction() {
     let ys = Array.new(vertices);
     let selectedColor = p.getColor();
     do Main.printShapeInstructions(rectangle, circle, triangle);
+    let esc = false;
 
-    while (counter < vertices) {
+    while ((counter < vertices) & ~esc) {
+      do Sys.wait(50);
       let key = Keyboard.keyPressed();
 
       if (key = UP)        { do pen.moveUp();    }
@@ -544,6 +535,7 @@ function void printStartInstruction() {
         do Screen.drawPixel(xs[counter], ys[counter]);
         let counter = counter + 1;
       }
+      
       if (key = ESC) {
         let esc = true;
       }
@@ -555,7 +547,7 @@ function void printStartInstruction() {
       if (full) {
         do Shapes.draw_rectangle(xs[0], ys[0], xs[1], ys[1], selectedColor);
       }
-      if (~full) {
+      else {
         do Shapes.draw_rectangle_outline(xs[0], ys[0], xs[1], ys[1], selectedColor);
       }
     }
@@ -564,7 +556,7 @@ function void printStartInstruction() {
       if (full) {
         do Shapes.draw_circle(xs[0], ys[0], xs[1], ys[1], selectedColor);
       }
-      if (~full) {
+      else {
         do Shapes.draw_circle_outline(xs[0], ys[0], xs[1], ys[1], selectedColor);
       }
     }
@@ -573,7 +565,7 @@ function void printStartInstruction() {
       if (full) {
         do Shapes.draw_triangle(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], selectedColor);
       }
-      if (~full) {
+      else {
         do Shapes.draw_triangle_outline(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], selectedColor);
       }
     }
@@ -607,6 +599,7 @@ function void printStartInstruction() {
     let pen = Pen.new(0, 0, 10);
     do Screen.clearScreen();
     do Main.printStartInstruction();
+    do Sys.wait(500);
     do Screen.clearScreen();
     let tb = ToolsControl.new();
     do pen.drawPen();
@@ -616,7 +609,7 @@ function void printStartInstruction() {
 
     while (~exit) {
 
-      do Main.printKeyInstructions();
+      //do Main.printKeyInstructions();
       let key = Keyboard.keyPressed();
 
       if (key = UP)        { do pen.moveUp();    }
