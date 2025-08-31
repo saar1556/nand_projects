@@ -589,6 +589,8 @@ class ToolsControl {
                 do Output.printString(chars[i]);
                 let i = i + 1;
         }
+
+        do chars.dispose();
         return;
     }
 
