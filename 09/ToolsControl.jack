@@ -162,11 +162,9 @@ class ToolsControl {
         // adjusting unique looking icons
         if (~(mode = MODE_PEN)) {let x1 = x1 - 1; let x2 = x2-1;}
         if (mode = MODE_CIRCLE) {let x2 = x2 + 1;}
-        if (mode = ADJ_SIZE) { let x2= x2+BTN_WID+1;}
 
         let y1 = BTN_TOP;
         let y2 = BTN_BOT;
-
         
         // border color
         if (selected) { do Screen.setColor(true); } 
@@ -581,11 +579,12 @@ class ToolsControl {
     method void drawChars() {
         var int i,row,col;
         var Array chars;
-        
-        let chars = Array.new(NUM_BTNS);
         let i = 0;
+        
+        // setting the last row as default
         let row = 22;
 
+        let chars = Array.new(NUM_BTNS);
         let chars[MODE_PEN] = PEN_CHAR;
         let chars[MODE_ERASE] = ERASE_CHAR;
         let chars[MODE_RECT] = REC_CHAR;
@@ -620,6 +619,7 @@ class ToolsControl {
         var int mode;
         let mode = -1;
 
+        // checking if a new valid mode is inputted
         if (newMode = PEN)       {let mode = MODE_PEN;}
         if (newMode = ERASE)     {let mode = MODE_ERASE;}
         if (newMode = RECTANGLE) {let mode = MODE_RECT;}
@@ -628,6 +628,7 @@ class ToolsControl {
         if (newMode = CLEAR)     {let mode = MODE_CLEAR;}
         if (mode = -1 | mode = currentMode) {return;}
 
+        // drawing a square around the picked mode and updating instrucion
         do drawBorder(currentMode,false);
         let currentMode = mode;
         do drawBorder(currentMode,true);
@@ -699,9 +700,6 @@ class ToolsControl {
      * This method must be called explicitly when the object is no longer needed.
      */
     method void dispose() {
-        // 2) free other arrays/strings you created with 'new' (if any)
-        //    e.g., if you had: field Array modes; then: if (~(modes = null)) { do Array.dispose(modes); let modes = null; }
-
         // 3) finally, free this object (optional; only if you won’t use it again)
         do Memory.deAlloc(this);
         return;
