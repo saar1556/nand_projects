@@ -194,15 +194,15 @@ class Main {
     let LEFT      = 130; // left arrow
     let RIGHT     = 132; // right arrow
     let PEN       = 66;  // "B" (black)
-    let ERASE     = 87; // "W" (white)
-    let RECTANGLE = 82; // "R" (rectangle)
+    let ERASE     = 87;  // "W" (white)
+    let RECTANGLE = 82;  // "R" (rectangle)
     let CIRCLE    = 67;  // "C" (circle)
-    let TRIANGLE  = 84; // "T" (triangle)
-    let CLEAR     = 88; // "X"
-    let ESC       = 140;  // "ESC"
-    let FULL      = 70; // "F" (full)
-    let EMPTY     = 69; // "E" (empty)
-    let ENTER     = 128;  // "ENTER"
+    let TRIANGLE  = 84;  // "T" (triangle)
+    let CLEAR     = 88;  // "X"
+    let ESC       = 140; // "ESC"
+    let FULL      = 70;  // "F" (full)
+    let EMPTY     = 69;  // "E" (empty)
+    let ENTER     = 128; // "ENTER"
     let INCREASE  = 43;  // "+" 
     let DECREASE  = 45;  // "-"
 
