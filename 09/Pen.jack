@@ -20,7 +20,7 @@
 class Pen {
     
     static int screenWidth, screenHeight;
-    static int scaleFactor, minWidth, maxWidth, SCREEN, REGISTERLEN, REGISTERSLINE;
+    static int scaleFactor, minWidth, maxWidth, SCREEN, REGISTERLEN, REGISTERSLINE, BLACK, WHITE;
     field int x, y;                 // Current position of the pen (top-left corner)
     field int width;                // Width of the pen (square size)
     field boolean isDrawingMode;    // Whether the pen is in drawing mode (black) or erasing mode (white) 
@@ -48,6 +48,8 @@ class Pen {
         let SCREEN = 16384;
         let REGISTERLEN = 16;
         let REGISTERSLINE = 32;
+        let BLACK = 1;
+        let WHITE = 0;
 
         let safeWidth = Math.min(Awidth, maxWidth);
         let width = safeWidth;
@@ -261,6 +263,14 @@ class Pen {
     method void draw() {
 
         var int i, row, rowEnd, col, colEnd;
+        var boolean curColor;
+
+        if (color) {
+            let curColor = BLACK;
+        }
+        else {
+            let curColor = WHITE;
+        }
         
         let i = 0;
         let row = y;
@@ -269,7 +279,7 @@ class Pen {
             let col = x;
             let colEnd = x + width;
             while (col < colEnd) {
-                let backgroundBuffer[i] = color;
+                let backgroundBuffer[i] = curColor;
                 let i = i + 1;
                 let col = col + 1;
             }

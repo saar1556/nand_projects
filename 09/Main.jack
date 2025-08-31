@@ -51,12 +51,6 @@ class Main {
         // Create pen at starting position (0,0) with size 10
         let pen = Pen.new(screenStart, screenStart, 10);
         
-        // Display short instruction message
-        do Screen.clearScreen();
-        do Output.moveCursor(11, 7); 
-        do Output.printString("Move the pen using the arrow keys on your keyboard."); 
-        do Sys.wait(2000);
-        
         // Clear screen again and set up tools
         do Screen.clearScreen();
         let tb = ToolsControl.new();
