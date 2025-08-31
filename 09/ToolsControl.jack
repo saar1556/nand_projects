@@ -29,10 +29,13 @@
 class ToolsControl {
 
     /** Modes */
-    static int MODE_PEN, MODE_ERASE, MODE_RECT, MODE_CIRCLE, MODE_TRI, MODE_CLEAR;
+    static int MODE_PEN, MODE_ERASE, MODE_RECT, MODE_CIRCLE, MODE_TRI, MODE_CLEAR, ADJ_SIZE;
 
     /** Layout */
-    static int TOOL_Y1, TOOL_Y2, BTN_TOP, BTN_BOT, BTN_WID, BTN_PAD, NUM_BTNS;
+    static int TOOL_Y1,TOOL_X1, TOOL_X2, TOOL_Y2, VERT_EDG ,HOR_EDG, BTN_TOP, BTN_BOT, BTN_WID, BTN_PAD;
+
+    /** Const Params */
+    static int NUM_BTNS, PEN_SIZE;
 
     /** State */
     field int currentMode;
@@ -50,15 +53,22 @@ class ToolsControl {
         let MODE_CIRCLE = 3;
         let MODE_TRI    = 4;
         let MODE_CLEAR  = 5;
+        let ADJ_SIZE    = 6;
 
-        let TOOL_Y1 = 219;
-        let TOOL_Y2 = 255;
+        let TOOL_Y1  = 219;
+        let TOOL_Y2  = 245;
+        let TOOL_X1  = 0;
+        let TOOL_X2  = 195;
+        let VERT_EDG = 255;
+
+        let HOR_EDG = 511;
         let BTN_TOP = 224;
         let BTN_BOT = 240;
+
         let BTN_WID = 16;
         let BTN_PAD = 2;
-        let NUM_BTNS = 6;
-
+        let NUM_BTNS = 7;
+        let ADJ_SIZE = 5;
 
         let currentMode = MODE_PEN;
         let screenBuffer = null;
@@ -84,27 +94,38 @@ class ToolsControl {
 // draw ToolBox
 // ############################################################################################
 
-        /**
+    /**
      * Draws the entire toolbar interface, including mode icons and labels.
      * This method should be called once after the object is constructed.
      */
     method void draw() {
-        var int mode,loc,r;
+        var int mode,loc,r,i;
 
         // clear toolbar strip (white) and draw a top border line
         do Screen.setColor(false);                          // white
-        do Screen.drawRectangle(0, TOOL_Y1, 511, TOOL_Y2);
+        do Screen.drawRectangle(0, TOOL_Y1, HOR_EDG, VERT_EDG);
         do Screen.setColor(true);                           // black
-        do Screen.drawLine(0, TOOL_Y1 - 1, 511, TOOL_Y1 - 1);
 
-        // drawing icons
+        // drawing tool box boundries
+        do Screen.drawLine(TOOL_X1, TOOL_Y1, HOR_EDG, TOOL_Y1);
+        do Screen.drawLine(TOOL_X1, TOOL_Y2,TOOL_X2 ,TOOL_Y2);
+        
+        let i = 0;
+        while (i < (NUM_BTNS-2)) {
+            let loc = btn_locs[i] + ((3*BTN_WID)/2);
+            do Screen.drawLine(loc, TOOL_Y1,loc ,TOOL_Y2);
+            let i = i + 1;
+        }
+        do Screen.drawLine(TOOL_X2, TOOL_Y1,TOOL_X2 ,TOOL_Y2);
+        
+        // drawing icons by calculating location using (x,y) = 32*y + [x/16]
         do drawPen((32*BTN_TOP) + (btn_locs[MODE_PEN]/16)); // mode pen
         do drawEraser((32*BTN_TOP) + (btn_locs[MODE_ERASE]/16)); // mode eraser
         do drawRectangle((32*BTN_TOP) + (btn_locs[MODE_RECT]/16)); // mode rectangle
         do drawCircle((32*BTN_TOP) + (btn_locs[MODE_CIRCLE]/16)); // mode circle
         do drawTriangle((32*BTN_TOP) + (btn_locs[MODE_TRI]/16)); // more triangle
         do drawClear((32*BTN_TOP) + (btn_locs[MODE_CLEAR]/16)); // clear
-
+        do drawPenSize(ADJ_SIZE);
         do drawBorder(MODE_PEN,true);
 
         // leave color black as default
@@ -123,6 +144,7 @@ class ToolsControl {
         // adjusting unique looking logos
         if (~(mode = MODE_PEN)) {let x1 = x1 - 1; let x2 = x2-1;}
         if (mode = MODE_CIRCLE) {let x2 = x2 + 1;}
+        if (mode = ADJ_SIZE) { let x2= x2+BTN_WID+1;}
 
         let y1 = BTN_TOP;
         let y2 = BTN_BOT;
@@ -275,7 +297,227 @@ class ToolsControl {
         return;
     }
 
+    method void draw1(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 960);
+        do Memory.poke(memAddress+64, 1008);
+        do Memory.poke(memAddress+96, 1008);
+        do Memory.poke(memAddress+128, 960);
+        do Memory.poke(memAddress+160, 960);
+        do Memory.poke(memAddress+192, 960);
+        do Memory.poke(memAddress+224, 960);
+        do Memory.poke(memAddress+256, 960);
+        do Memory.poke(memAddress+288, 960);
+        do Memory.poke(memAddress+320, 960);
+        do Memory.poke(memAddress+352, 960);
+        do Memory.poke(memAddress+384, 960);
+        do Memory.poke(memAddress+416, 2016);
+        do Memory.poke(memAddress+448, 4080);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+ 
+    method void draw2(int location) {
+            var int memAddress;
+            let memAddress = 16384+location;
+            do Memory.poke(memAddress+0, 0);
+            do Memory.poke(memAddress+32, 8184);
+            do Memory.poke(memAddress+64, 16380);
+            do Memory.poke(memAddress+96, 12316);
+            do Memory.poke(memAddress+128, 12300);
+            do Memory.poke(memAddress+160, 12288);
+            do Memory.poke(memAddress+192, 14336);
+            do Memory.poke(memAddress+224, 16368);
+            do Memory.poke(memAddress+256, 8184);
+            do Memory.poke(memAddress+288, 4092);
+            do Memory.poke(memAddress+320, 28);
+            do Memory.poke(memAddress+352, 12);
+            do Memory.poke(memAddress+384, 12);
+            do Memory.poke(memAddress+416, 16380);
+            do Memory.poke(memAddress+448, 16380);
+            do Memory.poke(memAddress+480, 0);
+            return;
+        }
+
     
+    method void draw3(int location) {
+        var int memAddress;
+        let memAddress = 16384 + location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 2016);
+        do Memory.poke(memAddress+64, 8184);
+        do Memory.poke(memAddress+96, 14364);
+        do Memory.poke(memAddress+128, 12300);
+        do Memory.poke(memAddress+160, 12288);
+        do Memory.poke(memAddress+192, 14336);
+        do Memory.poke(memAddress+224, 8128);
+        do Memory.poke(memAddress+256, 8128);
+        do Memory.poke(memAddress+288, 14336);
+        do Memory.poke(memAddress+320, 12288);
+        do Memory.poke(memAddress+352, 12300);
+        do Memory.poke(memAddress+384, 14364);
+        do Memory.poke(memAddress+416, 8184);
+        do Memory.poke(memAddress+448, 2016);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw4(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 1792);
+        do Memory.poke(memAddress+64, 1920);
+        do Memory.poke(memAddress+96, 1984);
+        do Memory.poke(memAddress+128, 1760);
+        do Memory.poke(memAddress+160, 1648);
+        do Memory.poke(memAddress+192, 1592);
+        do Memory.poke(memAddress+224, 1564);
+        do Memory.poke(memAddress+256, 16380);
+        do Memory.poke(memAddress+288, 16380);
+        do Memory.poke(memAddress+320, 1536);
+        do Memory.poke(memAddress+352, 1536);
+        do Memory.poke(memAddress+384, 1536);
+        do Memory.poke(memAddress+416, 1536);
+        do Memory.poke(memAddress+448, 1536);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw5(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 16380);
+        do Memory.poke(memAddress+64, 16380);
+        do Memory.poke(memAddress+96, 28);
+        do Memory.poke(memAddress+128, 60);
+        do Memory.poke(memAddress+160, 8188);
+        do Memory.poke(memAddress+192, 16376);
+        do Memory.poke(memAddress+224, 15360);
+        do Memory.poke(memAddress+256, 14336);
+        do Memory.poke(memAddress+288, 14336);
+        do Memory.poke(memAddress+320, 14336);
+        do Memory.poke(memAddress+352, 14336);
+        do Memory.poke(memAddress+384, 15372);
+        do Memory.poke(memAddress+416, 16380);
+        do Memory.poke(memAddress+448, 8176);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw6(int location) {
+        var int memAddress;
+        let memAddress = 16384 + location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 2016);
+        do Memory.poke(memAddress+64, 8184);
+        do Memory.poke(memAddress+96, 14364);
+        do Memory.poke(memAddress+128, 12300);
+        do Memory.poke(memAddress+160, 12);
+        do Memory.poke(memAddress+192, 12);
+        do Memory.poke(memAddress+224, 8188);
+        do Memory.poke(memAddress+256, 8188);
+        do Memory.poke(memAddress+288, 14364);
+        do Memory.poke(memAddress+320, 12300);
+        do Memory.poke(memAddress+352, 12300);
+        do Memory.poke(memAddress+384, 14364);
+        do Memory.poke(memAddress+416, 8184);
+        do Memory.poke(memAddress+448, 2016);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw7(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0,   0);
+        do Memory.poke(memAddress+32, 16380);
+        do Memory.poke(memAddress+64, 16380);
+        do Memory.poke(memAddress+96, 14336);
+        do Memory.poke(memAddress+128, 15360);
+        do Memory.poke(memAddress+160, 7680);
+        do Memory.poke(memAddress+192, 3840);
+        do Memory.poke(memAddress+224, 1920);
+        do Memory.poke(memAddress+256, 960);
+        do Memory.poke(memAddress+288, 960);
+        do Memory.poke(memAddress+320, 960);
+        do Memory.poke(memAddress+352, 960);
+        do Memory.poke(memAddress+384, 960);
+        do Memory.poke(memAddress+416, 960);
+        do Memory.poke(memAddress+448, 960);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw8(int location) {
+        var int memAddress;
+        let memAddress = 16384 + location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 2016);
+        do Memory.poke(memAddress+64, 8184);
+        do Memory.poke(memAddress+96, 14364);
+        do Memory.poke(memAddress+128, 12300);
+        do Memory.poke(memAddress+160, 12300);
+        do Memory.poke(memAddress+192, 14364);
+        do Memory.poke(memAddress+224, 8184);
+        do Memory.poke(memAddress+256, 8184);
+        do Memory.poke(memAddress+288, 14364);
+        do Memory.poke(memAddress+320, 12300);
+        do Memory.poke(memAddress+352, 12300);
+        do Memory.poke(memAddress+384, 14364);
+        do Memory.poke(memAddress+416, 8184);
+        do Memory.poke(memAddress+448, 2016);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw9(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 2016);
+        do Memory.poke(memAddress+64, 8184);
+        do Memory.poke(memAddress+96, 14364);
+        do Memory.poke(memAddress+128, 12300);
+        do Memory.poke(memAddress+160, 12300);
+        do Memory.poke(memAddress+192, 14364);
+        do Memory.poke(memAddress+224, 16376);
+        do Memory.poke(memAddress+256, 16368);
+        do Memory.poke(memAddress+288, 12288);
+        do Memory.poke(memAddress+320, 12288);
+        do Memory.poke(memAddress+352, 14364);
+        do Memory.poke(memAddress+384, 15420);
+        do Memory.poke(memAddress+416, 8184);
+        do Memory.poke(memAddress+448, 2016);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method void draw0(int location) {
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 2016);
+        do Memory.poke(memAddress+64, 8184);
+        do Memory.poke(memAddress+96, 14364);
+        do Memory.poke(memAddress+128, 12300);
+        do Memory.poke(memAddress+160, 12300);
+        do Memory.poke(memAddress+192, 12300);
+        do Memory.poke(memAddress+224, 12300);
+        do Memory.poke(memAddress+256, 12300);
+        do Memory.poke(memAddress+288, 12300);
+        do Memory.poke(memAddress+320, 12300);
+        do Memory.poke(memAddress+352, 12300);
+        do Memory.poke(memAddress+384, 14364);
+        do Memory.poke(memAddress+416, 8184);
+        do Memory.poke(memAddress+448, 2016);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
 
 // ############################################################################################
 
@@ -294,6 +536,55 @@ class ToolsControl {
         }
         return;
     }
+
+    /**
+     * Updates the size display on the toolbar.
+     *
+     * @param newSize The new integer value to display for the pen/shape size.
+     */
+    method void drawPenSize(int newSize) {
+        var int d1, d2, loc1, loc2;
+
+        // clamp to 0..99 (optional safety)
+        if (newSize < 0)  { let newSize = 0;  }
+        if (newSize > 99) { let newSize = 99; }
+
+        let d1 = newSize / 10;              // tens
+        let d2 = newSize - (d1 * 10);       // ones
+
+        // word offsets: row = BTN_TOP, col = x/16
+        let loc1 = 32 * BTN_TOP + (btn_locs[ADJ_SIZE] / 16);
+
+        // NOTE: parenthesis so the whole (x + width + pad) is divided by 16
+        let loc2 = 32 * BTN_TOP + ((btn_locs[ADJ_SIZE] + BTN_WID) / 16);
+
+        // ---- tens digit ----
+        if (d1 = 0) { do draw0(loc1); }
+        if (d1 = 1) { do draw1(loc1); }
+        if (d1 = 2) { do draw2(loc1); }
+        if (d1 = 3) { do draw3(loc1); }
+        if (d1 = 4) { do draw4(loc1); }
+        if (d1 = 5) { do draw5(loc1); }
+        if (d1 = 6) { do draw6(loc1); }
+        if (d1 = 7) { do draw7(loc1); }
+        if (d1 = 8) { do draw8(loc1); }
+        if (d1 = 9) { do draw9(loc1); }
+
+        // ---- ones digit ----
+        if (d2 = 0) { do draw0(loc2); }
+        if (d2 = 1) { do draw1(loc2); }
+        if (d2 = 2) { do draw2(loc2); }
+        if (d2 = 3) { do draw3(loc2); }
+        if (d2 = 4) { do draw4(loc2); }
+        if (d2 = 5) { do draw5(loc2); }
+        if (d2 = 6) { do draw6(loc2); }
+        if (d2 = 7) { do draw7(loc2); }
+        if (d2 = 8) { do draw8(loc2); }
+        if (d2 = 9) { do draw9(loc2); }
+
+        return;
+    }
+
 
 // ############################################################################################
 // Optional
@@ -317,14 +608,7 @@ class ToolsControl {
         return;
     }
 
-    /**
-     * Updates the size display on the toolbar.
-     *
-     * @param newSize The new integer value to display for the pen/shape size.
-     */
-    method void updateSize(int newSize) {
-        return;
-    }
+    
 
 // ############################################################################################
     
