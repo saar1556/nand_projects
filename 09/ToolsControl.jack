@@ -88,6 +88,8 @@ class ToolsControl {
         let pen_size = 5;
         let currentMode = MODE_PEN;
         let btn_locs = Array.new(NUM_BTNS);
+
+        // fill btn_locs 
         do calculateLocations();
 
         do draw();
@@ -157,7 +159,7 @@ class ToolsControl {
         let x1 = btn_locs[mode];
         let x2 = btn_locs[mode] + BTN_WID;
 
-        // adjusting unique looking logos
+        // adjusting unique looking icons
         if (~(mode = MODE_PEN)) {let x1 = x1 - 1; let x2 = x2-1;}
         if (mode = MODE_CIRCLE) {let x2 = x2 + 1;}
         if (mode = ADJ_SIZE) { let x2= x2+BTN_WID+1;}
@@ -592,6 +594,7 @@ class ToolsControl {
         let chars[MODE_CLEAR] = CLEAR_CHAR;
         let chars[ADJ_SIZE] = RESIZE_CHAR;
 
+        // printing each character at the buttom of the screen
         while (i < NUM_BTNS) {
                 let col = (btn_locs[i] + (BTN_WID/2))/8;
                 do Output.moveCursor(row,col);
@@ -623,7 +626,7 @@ class ToolsControl {
         if (newMode = CIRCLE)    {let mode = MODE_CIRCLE;}
         if (newMode = TRIANGLE)  {let mode = MODE_TRI;}
         if (newMode = CLEAR)     {let mode = MODE_CLEAR;}
-        if (mode = -1) {return;}
+        if (mode = -1 | mode = currentMode) {return;}
 
         do drawBorder(currentMode,false);
         let currentMode = mode;
