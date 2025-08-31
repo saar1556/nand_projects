@@ -1,0 +1,256 @@
+
+class Manager {
+
+    // Screen configuration
+    static int screenWidth, screenHeight, screenStart;
+
+    // Main key codes
+    static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECTANGLE ,CIRCLE ,TRIANGLE;
+    static int CLEAR, ESC, INCREASE, DECREASE;
+    
+    // Secondary key codes
+    static int FULL, EMPTY, ENTER;
+
+    // Number of vertices required for each shape
+    static int RECTANGLEv, CIRCLEv, TRIANGLEv;
+
+    /**
+     * Waits for the user to choose between FULL ("F") or EMPTY ("E") shape mode. 
+     * Returns true if FULL is chosen, false if EMPTY is chosen.
+     */
+    function boolean emptyOrFull() {
+
+        var int key;
+        var boolean loopEnd,full;
+
+        let loopEnd = false;
+        while (~loopEnd) {
+            do Sys.wait(50);
+            let key = Keyboard.keyPressed();
+            if (key = FULL) {
+            let full = true;
+            let loopEnd = true;
+            }
+            if (key = EMPTY) {
+            let full = false;
+            let loopEnd = true;
+            }
+        }
+        return full;
+    }
+
+    /**
+     * Draws the given shape (rectangle, circle, or triangle).
+     * Uses the vertices stored in xs[] and ys[], and 
+     * draws it either filled or outlined according to "full".
+     */
+    function void drawShape(int shape, boolean full, Array xs, Array ys) {
+        if (shape = RECTANGLE) {
+            if (full) {
+                do Shapes.draw_rectangle(xs[0], ys[0], xs[1], ys[1], true);
+            }
+            else {
+                do Shapes.draw_rectangle_outline(xs[0], ys[0], xs[1], ys[1], true);
+            }
+        }
+
+        if (shape = CIRCLE) {
+            if (full) {
+                do Shapes.draw_circle(xs[0], ys[0], xs[1], ys[1], true);
+            }
+            else {
+                do Shapes.draw_circle_outline(xs[0], ys[0], xs[1], ys[1], true);
+            }
+        }
+
+        if (shape = TRIANGLE) {
+            if (full) {
+                do Shapes.draw_triangle(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], true);
+            }
+            else {
+                do Shapes.draw_triangle_outline(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], true);
+            }
+        }
+        return;
+    }
+
+    /**
+     * Handles the interactive "shape mode".
+     * Lets the user move the pen, select vertices with ENTER,
+     * and finally draws the shape (rectangle, circle, triangle).
+     * ESC cancels the operation.
+     */
+    function void shapesMode(int shape, Pen p) {
+
+        var int counter, key, temp, vertices;
+        var Array xs, ys;
+        var boolean full, esc, pressed;
+
+        // Determine how many vertices are required
+        if (shape = RECTANGLE) { let vertices = RECTANGLEv;}
+        if (shape = CIRCLE) { let vertices = CIRCLEv;}
+        else {let vertices = TRIANGLEv;}
+
+        do p.stopDrawing();
+
+        // Ask the user if the shape should be full or empty
+        let full = Manager.emptyOrFull();
+
+        let counter = 0;
+        let xs = Array.new(vertices);
+        let ys = Array.new(vertices);
+        let esc = false;
+        let pressed = false;
+
+        // Collect all required vertices
+        while ((counter < vertices) & ~esc) {
+            if (~pressed){
+                do Sys.wait(80);
+                let pressed = true;
+            }
+            let key = Keyboard.keyPressed();
+
+            // Move the pen
+            if (key = UP)        { do p.moveUp();    }
+            if (key = DOWN)      { do p.moveDown();  } 
+            if (key = LEFT)      { do p.moveLeft();  } 
+            if (key = RIGHT)     { do p.moveRight(); }  
+            
+            // Select current pen location as a vertex
+            if (key = ENTER) {
+                let temp = p.getX();
+                let xs[counter] = temp;
+                let temp = p.getY();
+                let ys[counter] = temp;
+                do Screen.setColor(true);
+                do Screen.drawPixel(xs[counter], ys[counter]);
+                let counter = counter + 1;
+                let pressed = false;
+            }
+            
+            // Cancel shape mode
+            if (key = ESC) {
+            let esc = true;
+            }
+        }
+
+        if (~esc) { do Manager.drawShape(shape, full, xs, ys);}
+
+        do xs.dispose();
+        do ys.dispose();
+        return;
+    }
+
+    /**
+     * Main program loop.
+     * Handles keyboard input to control the pen, draw shapes,
+     * clear the screen, change pen size, and exit.
+     */
+    function void manager(Pen pen, ToolsControl tb) {
+
+        var int key, penSize;
+        var boolean exit;
+
+        // Key bindings
+        let UP        = 131; // up arrow
+        let DOWN      = 133; // down arrow
+        let LEFT      = 130; // left arrow
+        let RIGHT     = 132; // right arrow
+        let PEN       = 66;  // "B" (black)
+        let ERASE     = 87;  // "W" (white)
+        let RECTANGLE = 82;  // "R" (rectangle)
+        let CIRCLE    = 67;  // "C" (circle)
+        let TRIANGLE  = 84;  // "T" (triangle)
+        let CLEAR     = 88;  // "X"
+        let ESC       = 140; // "ESC"
+        let FULL      = 70;  // "F" (full)
+        let EMPTY     = 69;  // "E" (empty)
+        let ENTER     = 128; // "ENTER"
+        let INCREASE  = 43;  // "+" 
+        let DECREASE  = 45;  // "-"
+
+        // Shape vertices requirements
+        let RECTANGLEv = 2;
+        let CIRCLEv = 2;
+        let TRIANGLEv = 3;
+
+        // Screen settings
+        let screenWidth = 511; 
+        let screenHeight = 218;
+        let screenStart = 0;
+
+        let exit = false;
+
+        while (~exit) {
+            let key = Keyboard.keyPressed();
+
+            // Move pen
+            if (key = UP)        { do pen.moveUp();    }
+            if (key = DOWN)      { do pen.moveDown();  } 
+            if (key = LEFT)      { do pen.moveLeft();  } 
+            if (key = RIGHT)     { do pen.moveRight(); }  
+
+            // Drawing modes
+            if (key = PEN) { 
+                do tb.change_mode(PEN);
+                do pen.startDrawing();
+                do pen.setColor(true);
+            } 
+            if (key = ERASE) { 
+                do tb.change_mode(ERASE);
+                do pen.startDrawing();
+                do pen.setColor(false); 
+            }
+
+            // Shapes
+            if (key = RECTANGLE) { 
+                do pen.stopDrawing();
+                do tb.change_mode(RECTANGLE); 
+                do Manager.shapesMode(RECTANGLE, pen);
+            }
+            if (key = CIRCLE) { 
+                do pen.stopDrawing();
+                do tb.change_mode(CIRCLE);
+                do Manager.shapesMode(CIRCLE, pen);
+            } 
+            if (key = TRIANGLE) { 
+                do pen.stopDrawing();
+                do tb.change_mode(TRIANGLE);
+                do Manager.shapesMode(TRIANGLE, pen);
+            } 
+
+            // Clear screen
+            if (key = CLEAR) { 
+                do tb.change_mode(CLEAR); 
+                do Screen.setColor(false);
+                do Screen.drawRectangle(screenStart, screenStart, screenWidth, screenHeight);
+                do pen.drawPen();
+                do Sys.wait(50);
+            }
+
+            // Pen size
+            if (key = INCREASE) {
+                do pen.increaseSize();
+                let penSize = pen.getWidth();
+                do tb.drawPenSize(penSize);
+                do Sys.wait(50);
+            }
+            if (key = DECREASE) {
+                do pen.decreaseSize();
+                let penSize = pen.getWidth();
+                do tb.drawPenSize(penSize);
+                do Sys.wait(50);
+            }
+            
+            // Exit
+            if (key = ESC) { let exit = true; }  
+
+        }
+
+        do pen.dispose();
+        do tb.dispose();
+
+        return;
+    }
+  
+}

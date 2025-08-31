@@ -25,262 +25,47 @@
  *     on the screen using a series of lines.
  */
 
-
+/**
+ * The Main class initializes the drawing program.
+ * It sets up the screen, creates the pen and the tools control,
+ * shows a short instruction message, and then starts the Manager.
+ */
 class Main {
+  
+    // Screen configuration
+    static int screenWidth, screenHeight, screenStart;
 
-  static int UP, DOWN, LEFT, RIGHT, PEN, ERASE, RECTANGLE ,CIRCLE ,TRIANGLE;
-  static int CLEAR, ESC, FULL, EMPTY, ENTER, INCREASE, DECREASE;
-  static boolean endProgram;
+    /**
+    * Entry point of the program.
+    * Prepares the screen, initializes the pen and toolbox,
+    * and starts the main Manager loop.
+    */
+    function void main() {
+        var Pen pen;
+        var ToolsControl tb;
 
-  /**
-  * The main function of the program. It initializes the drawing application,
-  * creates the necessary objects for the pen and the toolbar, and enters the
-  * main drawing loop. The function is responsible for the overall program flow,
-  * handling user input, updating the pen's state, and managing the drawing and
-  * erasing actions.
-  *
-  * The main function first initializes the screen and then draws the permanent
-  * UI elements. This includes the separator line that divides the drawing
-  * canvas from the toolbar. It then enters a loop that listens for keyboard
-  * input to control the application.
-  */
+        let screenWidth = 511; 
+        let screenHeight = 218;
+        let screenStart = 0;
 
-  function void clearBottomLine() {
-     var int col;
-    let col = 0;
-    while (col < 32) { 
-        do Output.moveCursor(22, col);
-        do Output.printChar(" ");
-        let col = col + 1;
+        // Create pen at starting position (0,0) with size 10
+        let pen = Pen.new(screenStart, screenStart, 10);
+        
+        // Display short instruction message
+        do Screen.clearScreen();
+        do Output.moveCursor(11, 7); 
+        do Output.printString("Move the pen using the arrow keys on your keyboard."); 
+        do Sys.wait(2000);
+        
+        // Clear screen again and set up tools
+        do Screen.clearScreen();
+        let tb = ToolsControl.new();
+        do pen.drawPen();
+
+        // Start main manager loop
+        do Manager.manager(pen, tb);
+
+        return;
     }
-    return;
-  }
-
-
-  function void printShapeInstructions(boolean isRectangle, boolean isCircle, boolean isTriangle) {
-    do Main.clearBottomLine();
-    if (isRectangle) {
-      do Output.moveCursor(22, 0);
-      do Output.printString("Place pen on top-left & bottom-right, Enter sample, ESC return");
-    }
-    if (isCircle) {
-      do Output.moveCursor(22, 0);
-      do Output.printString("Place pen on center & edge, Enter to sample, ESC to return");
-    }
-    if (isTriangle) { 
-      do Output.moveCursor(22, 0);
-      do Output.printString("Place pen on vertices, Enter to sample each, ESC to return");
-    }
-    return;
-  }
-
-
-  function boolean emptyOrFull() {
-
-    var int key;
-    var boolean loopEnd,full;
-
-    do Main.clearBottomLine();
-    do Output.moveCursor(22, 0);
-    do Output.printString("Press 'f' for a full shape or 'e' for an empty shape");
-    
-    let loopEnd = false;
-    while (~loopEnd) {
-      do Sys.wait(50);
-      let key = Keyboard.keyPressed();
-      if (key = FULL) {
-        let full = true;
-        let loopEnd = true;
-      }
-      if (key = EMPTY) {
-        let full = false;
-        let loopEnd = true;
-      }
-    }
-
-    do Main.clearBottomLine();
-    return full;
-  }
-
-  function void shapesMode(
-          int vertices, boolean rectangle, boolean circle, boolean triangle, Pen p) {
-
-    var int counter, key, temp;
-    var Array xs, ys;
-    var boolean full, esc, toPrint;
-
-    do p.stopDrawing();
-    
-    // Determines whether the shape is full or empty
-    let full = Main.emptyOrFull();
-
-    let counter = 0;
-    let xs = Array.new(vertices);
-    let ys = Array.new(vertices);
-    let toPrint = true;
-    let esc = false;
-
-    while ((counter < vertices) & ~esc) {
-      do Sys.wait(100);
-      if (toPrint) {
-        do Main.printShapeInstructions(rectangle, circle, triangle);
-        let toPrint = false;
-      }
-      let key = Keyboard.keyPressed();
-
-      if (key = UP)        { do p.moveUp();    }
-      if (key = DOWN)      { do p.moveDown();  } 
-      if (key = LEFT)      { do p.moveLeft();  } 
-      if (key = RIGHT)     { do p.moveRight(); }  
-      if (key = ENTER) {
-        let temp = p.getX();
-        let xs[counter] = temp;
-        let temp = p.getY();
-        let ys[counter] = temp;
-        do Screen.setColor(true);
-        do Screen.drawPixel(xs[counter], ys[counter]);
-        let counter = counter + 1;
-        let toPrint = true;
-      }
-      
-      if (key = ESC) {
-        let esc = true;
-      }
-    }
-
-    do Main.clearBottomLine();
-
-    if (rectangle & ~esc) {
-      if (full) {
-        do Shapes.draw_rectangle(xs[0], ys[0], xs[1], ys[1], true);
-      }
-      else {
-        do Shapes.draw_rectangle_outline(xs[0], ys[0], xs[1], ys[1], true);
-      }
-    }
-
-    if (circle & ~esc) {
-      if (full) {
-        do Shapes.draw_circle(xs[0], ys[0], xs[1], ys[1], true);
-      }
-      else {
-        do Shapes.draw_circle_outline(xs[0], ys[0], xs[1], ys[1], true);
-      }
-    }
-
-    if (triangle & ~esc) {
-      if (full) {
-        do Shapes.draw_triangle(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], true);
-      }
-      else {
-        do Shapes.draw_triangle_outline(xs[0], ys[0], xs[1], ys[1], xs[2], ys[2], true);
-      }
-    }
-
-    do Output.moveCursor(22, 0);
-    do Output.printString("b=draw, w=erase, r=rect, c=circle, t=tri, +/- pen size, x=clear");    
-    return;
-  }
-
-
-  function void main() {
-    var Pen pen;
-    var ToolsControl tb;
-    var int key;
-    var boolean exit;
-    
-    let UP        = 131; // up arrow
-    let DOWN      = 133; // down arrow
-    let LEFT      = 130; // left arrow
-    let RIGHT     = 132; // right arrow
-    let PEN       = 66;  // "B" (black)
-    let ERASE     = 87;  // "W" (white)
-    let RECTANGLE = 82;  // "R" (rectangle)
-    let CIRCLE    = 67;  // "C" (circle)
-    let TRIANGLE  = 84;  // "T" (triangle)
-    let CLEAR     = 88;  // "X"
-    let ESC       = 140; // "ESC"
-    let FULL      = 70;  // "F" (full)
-    let EMPTY     = 69;  // "E" (empty)
-    let ENTER     = 128; // "ENTER"
-    let INCREASE  = 43;  // "+" 
-    let DECREASE  = 45;  // "-"
-
-
-    let pen = Pen.new(0, 0, 10);
-    do Screen.clearScreen();
-    do Output.moveCursor(11, 7); 
-    do Output.printString("Move the pen using the arrow keys on your keyboard."); 
-    do Sys.wait(2000);
-    do Screen.clearScreen();
-    let tb = ToolsControl.new();
-    do pen.drawPen();
-
-    let exit = false;
-
-    do Output.moveCursor(22, 0);
-    do Output.printString("b=draw, w=erase, r=rect, c=circle, t=tri, +/- pen size, x=clear");
-    while (~exit) {
-      let key = Keyboard.keyPressed();
-
-      if (key = UP)        { do pen.moveUp();    }
-      if (key = DOWN)      { do pen.moveDown();  } 
-      if (key = LEFT)      { do pen.moveLeft();  } 
-      if (key = RIGHT)     { do pen.moveRight(); }  
-
-      if (key = PEN) { 
-          do tb.change_mode(0);
-          do pen.startDrawing();
-          do pen.setColor(true);
-      } 
-
-      if (key = ERASE) { 
-          do tb.change_mode(1);
-          do pen.startDrawing();
-          do pen.setColor(false); 
-      }
-
-      if (key = RECTANGLE) { 
-          do pen.stopDrawing();
-          do tb.change_mode(2); 
-          do Main.shapesMode(2, true, false, false, pen);
-      }
-
-      if (key = CIRCLE) { 
-          do pen.stopDrawing();
-          do tb.change_mode(3);
-          do Main.shapesMode(2, false, true, false, pen);
-      } 
-
-      if (key = TRIANGLE) { 
-          do pen.stopDrawing();
-          do tb.change_mode(4);
-          do Main.shapesMode(3, false, false, true, pen);
-      } 
-
-      if (key = CLEAR) { 
-          do tb.change_mode(5); 
-          do Screen.setColor(false);
-          do Screen.drawRectangle(0, 0, 511, 218);
-      }
-
-      if (key = INCREASE) {
-          do pen.increaseSize();
-      }
-
-      if (key = DECREASE) {
-          do pen.decreaseSize();
-      }
-
-      if (key = ESC) { let exit = true; }  
-
-      do Sys.wait(30);
-    }
-
-    do pen.dispose();
-    do tb.dispose();
-
-    return;
-  }
   
 }
