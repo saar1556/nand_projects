@@ -1,5 +1,4 @@
 
-
 //  methods list:
 //
 //  constructor()
@@ -39,7 +38,7 @@
 class Pen {
     
     static int screenWidth, screenHeight;
-    static int resizeDecrement, resizeIncrement, minWidth, maxWidth, SCREEN;
+    static int scaleFactor, minWidth, maxWidth, SCREEN, REGISTERLEN, REGISTERSLINE;
     field int x, y; // screen location of the pointer's top-left corner
     field int width; // line width in pixels
     field boolean isDrawingMode; // Indicates if the pen is in drawing (true) or erasing (false) mode 
@@ -59,11 +58,12 @@ class Pen {
 
         let screenWidth = 511; // 0 to 511
         let screenHeight = 218; // 0 to 218
-        let resizeIncrement = 2;
-        let resizeDecrement = 2;
+        let scaleFactor = 2;
         let minWidth = 1;
-        let maxWidth = 100;
+        let maxWidth = 30;
         let SCREEN = 16384;
+        let REGISTERLEN = 16;
+        let REGISTERSLINE = 32;
 
         let safeWidth = Math.min(Awidth, maxWidth);
         let width = safeWidth;
@@ -80,11 +80,29 @@ class Pen {
         let color = true;
 
         // Allocate backgroundBuffer to save screen area under the pen.
-        // Each word = 16 pixels; add 15 to ensure ceiling division.
-        // backgroundBuffer size = ((maxWidth)*(maxWidth)+15)/16 words.
-        let backgroundBuffer = Array.new(((maxWidth) * (maxWidth) + 15) / 16);
+        let backgroundBuffer = Array.new((maxWidth) * (maxWidth));
         return this;
     }
+
+    /**
+ * Gets the color of a specific pixel on the screen.
+ * @param x The x-coordinate of the pixel (0-511)
+ * @param y The y-coordinate of the pixel (0-255) 
+ * @return true if pixel is black, false if pixel is white
+ */
+function boolean getPixel(int x, int y) {
+    var int address, word, bitPosition, mask;
+    
+    let address = SCREEN + (y * REGISTERSLINE) + (x / REGISTERLEN);
+    let word = Memory.peek(address);
+    let bitPosition = 15 - (x & 15);
+    let mask = (bitPosition * bitPosition);
+    if (word & mask) {
+        return true;
+    }
+    
+    return false;
+}
 
     
     /** Draws the pen's pointer shape on the screen in black. */
@@ -95,23 +113,21 @@ class Pen {
         var int rowEnd;
         var int col;
         var int colEnd;
-        var int address;
-        var int temp;
+        var boolean temp;
         
-        if ( ( (x + width) > screenWidth) | ( (y + width) > screenHeight) ) {
+        if ( ( (x + width - 1) > screenWidth) | ( (y + width - 1) > screenHeight) ) {
             return;
         }
 
-        // Save the background to the backgroundBuffer 
+
         let i = 0;
         let row = y;
-        let rowEnd = (y + width);
-        while (row < rowEnd + 1) {
-            let col = x / 16;  
-            let colEnd = (x + width) / 16;
-            while (col < colEnd + 1) {
-                let address = SCREEN + (row * 32) + col;
-                let temp = Memory.peek(address);
+        let rowEnd = y + width;
+        while (row < rowEnd) {
+            let col = x;
+            let colEnd = x + width;
+            while (col < colEnd) {
+                let temp = Pen.getPixel(col, row);
                 let backgroundBuffer[i] = temp;
                 let i = i + 1;
                 let col = col + 1;
@@ -121,44 +137,48 @@ class Pen {
 
         // draw square present the pointer
         do Screen.setColor(true); // black
-        do Screen.drawRectangle(x, y, x + width, y + width);
+        do Screen.drawRectangle(x, y, x + width - 1 , y + width - 1);
 
         // draw internal white square outline
         if (width > 2) {
             do Screen.setColor(false); // white
-            do Screen.drawRectangle(x + 1, y + 1, x + width - 1, y + width - 1);
+            do Screen.drawRectangle(x + 1, y + 1, x + width - 2, y + width - 2);
             if (width > 6) {
                 do Screen.setColor(true);
-                do Screen.drawRectangle(x + 3, y + 3, x + width - 3, y + width - 3);
+                do Screen.drawRectangle(x + 3, y + 3, x + width - 4, y + width - 4);
             }
         }
         do Screen.setColor(true);
         return;
+
     }
     
 
     /** Erases the pen's pointer shape from the screen by drawing the previous background. */
     method void erasePen() {
 
-        var int i, row, rowEnd, col, colEnd, address, value;
+        
+        var int i, row, rowEnd, col, colEnd;
+        var boolean curColor;
 
         let i = 0;
         let row = y;
-        let rowEnd = (y + width); 
-        while (row < rowEnd + 1) {
-            let col = x / 16;  
-            let colEnd = (x + width) / 16;
-
-            while (col < colEnd + 1) {
-                let address = SCREEN + (row * 32) + col;
-                let value = backgroundBuffer[i];
-                do Memory.poke(address, value);
+        let rowEnd = y + width;
+        while (row < rowEnd) {
+            let col = x;
+            let colEnd = x + width;
+            while (col < colEnd) {
+                let curColor = false;
+                if (backgroundBuffer[i]) {
+                    let curColor = true;
+                }
+                do Screen.setColor(curColor);
+                do Screen.drawPixel(col, row);
                 let i = i + 1;
                 let col = col + 1;
             }
             let row = row + 1;
         }
-        
         return;
     }
 
@@ -228,30 +248,31 @@ class Pen {
      */
     method void draw() {
 
-        /** var int i, row, rowEnd, col, colEnd, value;
-        var boolean temp;
+        var int i, row, rowEnd, col, colEnd;
+        var boolean address;
 
-        if (~isDrawingMode) {
+        /**if (~isDrawingMode) {
             return;
-        } 
+        } */
 
-        let i = 0;
+        do Screen.setColor(color);
+        do Screen.drawRectangle(x, y, x + width - 1 , y + width - 1);
+
+        /**let i = 0;
         let row = y;
-        let rowEnd = (y + width);
-        while (row < rowEnd + 1) {
-            let col = x / 16;  
-            let colEnd = (x + width) / 16;
-            while (col < colEnd + 1) {
-                let temp = color;
-                let backgroundBuffer[i] = temp;
+        let rowEnd = y + width;
+        while (row < rowEnd) { 
+            let col = x;  
+            let colEnd = x + width;
+            while (col < colEnd) {
+                let address = Pen.getPixel(col, row);
+                let backgroundBuffer[i] = address;
                 let i = i + 1;
                 let col = col + 1;
             }
             let row = row + 1;
-        } */
+        }*/
 
-        do Screen.setColor(color);
-        do Screen.drawRectangle(x, y, x + width, y + width);
         return;
     }
 
@@ -259,14 +280,14 @@ class Pen {
     /** Increments the pen width by a fixed value (2 pixels), up to a maximum size. */
     method void increaseSize() {
         
-        if (((x + width + 2) > screenWidth) | 
-            ((y + width + 2) > screenHeight) |
-            ((width + 2) > maxWidth)) {
+        if (((x + width + scaleFactor) > screenWidth) | 
+            ((y + width + scaleFactor) > screenHeight) |
+            ((width + scaleFactor) > maxWidth)) {
             return;
         }
 
         do erasePen();
-        let width = width + 2;
+        let width = width + scaleFactor;
         do drawPen();
 
         return;
@@ -276,12 +297,12 @@ class Pen {
     /** Decrements the pen width by a fixed value (2 pixels), down to a minimum size. */
     method void decreaseSize() {
 
-        if ((width - 2) < minWidth) {
+        if ((width - scaleFactor) < minWidth) {
             return;
         }
 
         do erasePen();
-        let width = width - 2;
+        let width = width - scaleFactor;
         do drawPen();
 
         return;
@@ -366,6 +387,7 @@ class Pen {
       This method must be called explicitly when the Pen is no longer needed.
      */
     method void dispose() {
+        do Memory.deAlloc(backgroundBuffer);
         do Memory.deAlloc(this);
         return;
     }
