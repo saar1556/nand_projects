@@ -77,13 +77,18 @@ class Pen {
      * @param y The y-coordinate of the pixel (0–255)
      * @return true if the pixel is black, false if white
      */
-    function boolean getPixel(int x, int y) {
-        var int address, word, bitPosition, mask;
+    function boolean getPixel(int Ax, int Ay) {
+        var int address, word, bitPosition, mask, i;
         
-        let address = SCREEN + (y * REGISTERSLINE) + (x / REGISTERLEN);
+        let address = SCREEN + (Ay * REGISTERSLINE) + (Ax / REGISTERLEN);
         let word = Memory.peek(address);
-        let bitPosition = 15 - (x & 15);
-        let mask = (bitPosition * bitPosition);
+        let bitPosition = 15 - (Ax & 15);
+        let mask = 1;
+        let i = 0;
+        while (i < bitPosition) {
+            let mask = mask + mask;
+            let i = i + 1;
+        }
         if (word & mask) {
             return true;
         }
@@ -119,7 +124,12 @@ class Pen {
             let colEnd = x + width;
             while (col < colEnd) {
                 let temp = Pen.getPixel(col, row);
-                let backgroundBuffer[i] = temp;
+                if (temp) {
+                    let backgroundBuffer[i] = BLACK;
+                }
+                else {
+                    let backgroundBuffer[i] = WHITE;
+                }
                 let i = i + 1;
                 let col = col + 1;
             }
@@ -140,6 +150,7 @@ class Pen {
             }
         }
         do Screen.setColor(true);
+        do Sys.wait(15);
         return;
 
     }
@@ -162,7 +173,7 @@ class Pen {
             let colEnd = x + width;
             while (col < colEnd) {
                 let curColor = false;
-                if (backgroundBuffer[i]) {
+                if (backgroundBuffer[i] = 1) {
                     let curColor = true;
                 }
                 do Screen.setColor(curColor);
@@ -293,19 +304,18 @@ class Pen {
      * Increases the pen size by the fixed scale factor (e.g., +2 pixels).
      * The pen size will not grow beyond maxWidth or screen limits.
      */
-    method void increaseSize() {
+    method boolean increaseSize() {
         
         if (((x + width + scaleFactor) > screenWidth) | 
             ((y + width + scaleFactor) > screenHeight) |
             ((width + scaleFactor) > maxWidth)) {
-            return;
+            return false;
         }
 
         do erasePen();
         let width = width + scaleFactor;
         do drawPen();
-
-        return;
+        return true;
     }
 
 
@@ -313,17 +323,15 @@ class Pen {
      * Decreases the pen size by the fixed scale factor (e.g., -2 pixels).
      * The pen size will not shrink below minWidth.
      */
-    method void decreaseSize() {
+    method boolean decreaseSize() {
 
         if ((width - scaleFactor) < minWidth) {
-            return;
+            return false;
         }
-
         do erasePen();
         let width = width - scaleFactor;
         do drawPen();
-
-        return;
+        return true;
     }
 
 
@@ -340,10 +348,8 @@ class Pen {
         if (isDrawingMode) {
             do draw();
         }
-        else {
-            do erasePen();
-        }
         
+        do erasePen();        
         let y = y - 1;
         do drawPen();
         return;
@@ -363,9 +369,8 @@ class Pen {
         if (isDrawingMode) {
             do draw();
         }
-        else {
-            do erasePen();
-        }
+        
+        do erasePen();  
         let y = y + 1;
         do drawPen();
         return;
@@ -385,9 +390,8 @@ class Pen {
         if (isDrawingMode) {
             do draw();
         }
-        else {
-            do erasePen();
-        }
+        
+        do erasePen();  
         let x = x + 1;
         do drawPen();
         return;
@@ -407,9 +411,8 @@ class Pen {
         if (isDrawingMode) {
             do draw();
         }
-        else {
-            do erasePen();
-        }
+
+        do erasePen();  
         let x = x - 1;
         do drawPen();
         return;

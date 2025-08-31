@@ -89,7 +89,7 @@ class Manager {
 
         var int counter, key, temp, vertices;
         var Array xs, ys;
-        var boolean full, esc, pressed;
+        var boolean full, esc;
 
         // Determine how many vertices are required
         if (shape = RECTANGLE) { let vertices = RECTANGLEv;}
@@ -105,14 +105,10 @@ class Manager {
         let counter = 0;
         let xs = Array.new(vertices);
         let ys = Array.new(vertices);
-        let pressed = false;
 
         // Collect all required vertices
         while ((counter < vertices) & ~esc) {
-            if (~pressed){
-                do Sys.wait(80);
-                let pressed = true;
-            }
+
             let key = Keyboard.keyPressed();
 
             // Move the pen
@@ -130,7 +126,7 @@ class Manager {
                 do Screen.setColor(true);
                 do Screen.drawPixel(xs[counter], ys[counter]);
                 let counter = counter + 1;
-                let pressed = false;
+                do Sys.wait(250);
             }
             
             // Cancel shape mode
@@ -154,7 +150,7 @@ class Manager {
     function void manager(Pen pen, ToolsControl tb) {
 
         var int key, penSize;
-        var boolean exit;
+        var boolean exit, changed;
 
         // Key bindings
         let UP        = 131; // up arrow
@@ -193,19 +189,15 @@ class Manager {
             // Move pen
             if (key = UP) {
                 do pen.moveUp();
-                do Sys.wait(8);
             }
             if (key = DOWN) { 
                 do pen.moveDown();  
-                do Sys.wait(8);
             } 
             if (key = LEFT) { 
                 do pen.moveLeft();
-                do Sys.wait(8);
             } 
             if (key = RIGHT) { 
                 do pen.moveRight(); 
-                do Sys.wait(8);
             }  
 
             // Drawing modes
@@ -225,16 +217,19 @@ class Manager {
                 do pen.stopDrawing();
                 do tb.change_mode(RECTANGLE); 
                 do Manager.shapesMode(RECTANGLE, pen);
+                do tb.change_mode(PEN);
             }
             if (key = CIRCLE) { 
                 do pen.stopDrawing();
                 do tb.change_mode(CIRCLE);
                 do Manager.shapesMode(CIRCLE, pen);
+                do tb.change_mode(PEN);
             } 
             if (key = TRIANGLE) { 
                 do pen.stopDrawing();
                 do tb.change_mode(TRIANGLE);
                 do Manager.shapesMode(TRIANGLE, pen);
+                do tb.change_mode(PEN);
             } 
 
             // Clear screen
@@ -243,20 +238,25 @@ class Manager {
                 do Screen.setColor(false);
                 do Screen.drawRectangle(screenStart, screenStart, screenWidth, screenHeight);
                 do pen.drawPen();
+                do tb.change_mode(PEN);
                 do Sys.wait(50);
             }
 
             // Pen size
             if (key = INCREASE) {
-                do pen.increaseSize();
-                let penSize = pen.getWidth();
-                do tb.drawPenSize(penSize);
+                let changed = pen.increaseSize();
+                if (changed) {
+                    let penSize = pen.getWidth();
+                    do tb.drawPenSize(penSize);
+                }
                 do Sys.wait(50);
             }
             if (key = DECREASE) {
-                do pen.decreaseSize();
-                let penSize = pen.getWidth();
-                do tb.drawPenSize(penSize);
+                let changed = pen.decreaseSize();
+                if (changed) {
+                    let penSize = pen.getWidth();
+                    do tb.drawPenSize(penSize);
+                }
                 do Sys.wait(50);
             }
             
