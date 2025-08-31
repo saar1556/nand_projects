@@ -135,7 +135,7 @@ class Manager {
             
             // Cancel shape mode
             if (key = QUIT) {
-            let esc = true;
+                let esc = true;
             }
         }
 
