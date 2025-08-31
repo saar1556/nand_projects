@@ -36,16 +36,21 @@ class ToolsControl {
 
     /** Const Params */
     static int NUM_BTNS, PEN_SIZE;
+    static int PEN,ERASE,RECTANGLE,CIRCLE,TRIANGLE,CLEAR;
 
-    /** State */
+    /** dynamic params */
     field int currentMode;
-    field Array screenBuffer;     // null when not used
-    field boolean hasBuf;
-
     field Array btn_locs;
 
     /** Constructor */
     constructor ToolsControl new() {
+
+        let PEN       = 66;  // "B" (black)
+        let ERASE     = 87;  // "W" (white)
+        let RECTANGLE = 82;  // "R" (rectangle)
+        let CIRCLE    = 67;  // "C" (circle)
+        let TRIANGLE  = 84;  // "T" (triangle)
+        let CLEAR     = 88;  // "X"
 
         let MODE_PEN    = 0;
         let MODE_ERASE  = 1;
@@ -55,10 +60,10 @@ class ToolsControl {
         let MODE_CLEAR  = 5;
         let ADJ_SIZE    = 6;
 
-        let TOOL_Y1  = 219;
-        let TOOL_Y2  = 245;
+        let TOOL_Y1  = 220;
+        let TOOL_Y2  = 242;
         let TOOL_X1  = 0;
-        let TOOL_X2  = 195;
+        let TOOL_X2  = 227;
         let VERT_EDG = 255;
 
         let HOR_EDG = 511;
@@ -68,11 +73,9 @@ class ToolsControl {
         let BTN_WID = 16;
         let BTN_PAD = 2;
         let NUM_BTNS = 7;
-        let ADJ_SIZE = 5;
+        let PEN_SIZE = 5;
 
         let currentMode = MODE_PEN;
-        let screenBuffer = null;
-        let hasBuf = false;
 
         let btn_locs = Array.new(NUM_BTNS);
         do calculateLocations();
@@ -109,9 +112,8 @@ class ToolsControl {
         // drawing tool box boundries
         do Screen.drawLine(TOOL_X1, TOOL_Y1, HOR_EDG, TOOL_Y1);
         do Screen.drawLine(TOOL_X1, TOOL_Y2,TOOL_X2 ,TOOL_Y2);
-        
         let i = 0;
-        while (i < (NUM_BTNS-2)) {
+        while (i < (NUM_BTNS-1)) {
             let loc = btn_locs[i] + ((3*BTN_WID)/2);
             do Screen.drawLine(loc, TOOL_Y1,loc ,TOOL_Y2);
             let i = i + 1;
@@ -125,12 +127,17 @@ class ToolsControl {
         do drawCircle((32*BTN_TOP) + (btn_locs[MODE_CIRCLE]/16)); // mode circle
         do drawTriangle((32*BTN_TOP) + (btn_locs[MODE_TRI]/16)); // more triangle
         do drawClear((32*BTN_TOP) + (btn_locs[MODE_CLEAR]/16)); // clear
-        do drawPenSize(ADJ_SIZE);
+        do drawPenSize(PEN_SIZE);
+        
+        // initialize pen UI by default
         do drawBorder(MODE_PEN,true);
+        do printInstruciton();
 
         // leave color black as default
         do Screen.setColor(true);
 
+
+        do drawChars();
        return;
     }
 
@@ -296,6 +303,49 @@ class ToolsControl {
         do Memory.poke(memAddress+480, -16381);
         return;
     }
+  
+    method void drawPenSize(int newSize) {
+        var int d1, d2, loc1, loc2;
+
+        // clamp to 0..99 (optional safety)
+        if (newSize < 0)  { let newSize = 0;  }
+        if (newSize > 99) { let newSize = 99; }
+
+        let d1 = newSize / 10;              // tens
+        let d2 = newSize - (d1 * 10);       // ones
+
+        // word offsets: row = BTN_TOP, col = x/16
+        let loc1 = 32 * BTN_TOP + (btn_locs[ADJ_SIZE] / 16);
+
+        // NOTE: parenthesis so the whole (x + width + pad) is divided by 16
+        let loc2 = 32 * BTN_TOP + ((btn_locs[ADJ_SIZE] + BTN_WID) / 16);
+
+        // ---- tens digit ----
+        if (d1 = 0) { do draw0(loc1); }
+        if (d1 = 1) { do draw1(loc1); }
+        if (d1 = 2) { do draw2(loc1); }
+        if (d1 = 3) { do draw3(loc1); }
+        if (d1 = 4) { do draw4(loc1); }
+        if (d1 = 5) { do draw5(loc1); }
+        if (d1 = 6) { do draw6(loc1); }
+        if (d1 = 7) { do draw7(loc1); }
+        if (d1 = 8) { do draw8(loc1); }
+        if (d1 = 9) { do draw9(loc1); }
+
+        // ---- ones digit ----
+        if (d2 = 0) { do draw0(loc2); }
+        if (d2 = 1) { do draw1(loc2); }
+        if (d2 = 2) { do draw2(loc2); }
+        if (d2 = 3) { do draw3(loc2); }
+        if (d2 = 4) { do draw4(loc2); }
+        if (d2 = 5) { do draw5(loc2); }
+        if (d2 = 6) { do draw6(loc2); }
+        if (d2 = 7) { do draw7(loc2); }
+        if (d2 = 8) { do draw8(loc2); }
+        if (d2 = 9) { do draw9(loc2); }
+
+        return;
+    }
 
     method void draw1(int location) {
         var int memAddress;
@@ -341,7 +391,6 @@ class ToolsControl {
             return;
         }
 
-    
     method void draw3(int location) {
         var int memAddress;
         let memAddress = 16384 + location;
@@ -518,6 +567,32 @@ class ToolsControl {
         return;
     }
 
+    method void drawChars() {
+        var int i,row,col;
+        var Array chars;
+        
+        let chars = Array.new(NUM_BTNS);
+        let i = 0;
+        let row = 22;
+
+        let chars[MODE_PEN] = "b";
+        let chars[MODE_ERASE] = "w";
+        let chars[MODE_RECT] = "r";
+        let chars[MODE_CIRCLE] = "c";
+        let chars[MODE_TRI] = "t";
+        let chars[MODE_CLEAR] = "x";
+        let chars[ADJ_SIZE] = "+/-";
+
+        while (i < NUM_BTNS) {
+                let col = (btn_locs[i] + (BTN_WID/2))/8;
+                do Output.moveCursor(row,col);
+                do Output.printString(chars[i]);
+                let i = i + 1;
+        }
+        return;
+    }
+
+
 
 // ############################################################################################
 
@@ -529,91 +604,80 @@ class ToolsControl {
      * @param newMode The integer representing the new mode to select.
      */
     method void change_mode(int newMode) {
-        if (newMode < NUM_BTNS + 1 & newMode > -1) { 
-            do drawBorder(currentMode,false);
-            let currentMode = newMode;
-            do drawBorder(currentMode,true);
-        }
+        var int mode;
+        let mode = -1;
+
+        if (newMode = PEN)       {let mode = MODE_PEN;}
+        if (newMode = ERASE)     {let mode = MODE_ERASE;}
+        if (newMode = RECTANGLE) {let mode = MODE_RECT;}
+        if (newMode = CIRCLE)    {let mode = MODE_CIRCLE;}
+        if (newMode = TRIANGLE)  {let mode = MODE_TRI;}
+        if (newMode = CLEAR)     {let mode = MODE_CLEAR;}
+        if (mode = -1) {return;}
+
+        do drawBorder(currentMode,false);
+        let currentMode = mode;
+        do drawBorder(currentMode,true);
+        do printInstruciton();
+        
         return;
     }
-
-    /**
-     * Updates the size display on the toolbar.
-     *
-     * @param newSize The new integer value to display for the pen/shape size.
-     */
-    method void drawPenSize(int newSize) {
-        var int d1, d2, loc1, loc2;
-
-        // clamp to 0..99 (optional safety)
-        if (newSize < 0)  { let newSize = 0;  }
-        if (newSize > 99) { let newSize = 99; }
-
-        let d1 = newSize / 10;              // tens
-        let d2 = newSize - (d1 * 10);       // ones
-
-        // word offsets: row = BTN_TOP, col = x/16
-        let loc1 = 32 * BTN_TOP + (btn_locs[ADJ_SIZE] / 16);
-
-        // NOTE: parenthesis so the whole (x + width + pad) is divided by 16
-        let loc2 = 32 * BTN_TOP + ((btn_locs[ADJ_SIZE] + BTN_WID) / 16);
-
-        // ---- tens digit ----
-        if (d1 = 0) { do draw0(loc1); }
-        if (d1 = 1) { do draw1(loc1); }
-        if (d1 = 2) { do draw2(loc1); }
-        if (d1 = 3) { do draw3(loc1); }
-        if (d1 = 4) { do draw4(loc1); }
-        if (d1 = 5) { do draw5(loc1); }
-        if (d1 = 6) { do draw6(loc1); }
-        if (d1 = 7) { do draw7(loc1); }
-        if (d1 = 8) { do draw8(loc1); }
-        if (d1 = 9) { do draw9(loc1); }
-
-        // ---- ones digit ----
-        if (d2 = 0) { do draw0(loc2); }
-        if (d2 = 1) { do draw1(loc2); }
-        if (d2 = 2) { do draw2(loc2); }
-        if (d2 = 3) { do draw3(loc2); }
-        if (d2 = 4) { do draw4(loc2); }
-        if (d2 = 5) { do draw5(loc2); }
-        if (d2 = 6) { do draw6(loc2); }
-        if (d2 = 7) { do draw7(loc2); }
-        if (d2 = 8) { do draw8(loc2); }
-        if (d2 = 9) { do draw9(loc2); }
-
-        return;
-    }
-
-
-// ############################################################################################
-// Optional
-// ############################################################################################
 
     /**
      * Saves the portion of the drawing canvas that will be overwritten by instructions
      * into a temporary memory buffer.
      */
-    method void showInstructions() {
-        // let screenBuffer = Memory.alloc(ToolsControl.instructionsBufferSize);
-        // ... copy screen content
-        // ... display instructions
+    method void printInstruciton() {
+        var int pad,row,col;
+        let pad = 5;
+
+        // calculate text location using (x,y) = x/8 + y/11
+        let row = (TOOL_Y1/11);
+        let col = (TOOL_X2 + pad)/8;
+
+        do Screen.setColor(false);
+        do Screen.drawRectangle(TOOL_X2+1,TOOL_Y1+1,511,255);
+        do Screen.setColor(true);
+
+        // generating message
+        do Output.moveCursor(row,col);
+        if (currentMode = MODE_PEN) { 
+            do Output.printString("Pen: use keyboard arrows to move");
+        }
+
+        if (currentMode = MODE_ERASE) {
+            do Output.printString("Eraser: use keyboard arrows to move");
+        }
+
+        if (currentMode = MODE_RECT) {
+            do Output.printString("Rectagnle: f=fill  e=empty");
+            do Output.moveCursor(row+1,col);
+            do Output.printString("Mark diagonal edges.");
+            do Output.moveCursor(row+2,col);
+            do Output.printString("Enter=mark,ESC=cancel");
+        }
+
+        if (currentMode = MODE_CIRCLE) {
+            do Output.printString("Circle: f=fill  e=empty");
+            do Output.moveCursor(row+1,col);
+            do Output.printString("Mark center then edge.");
+            do Output.moveCursor(row+2,col);
+            do Output.printString("Enter=mark,ESC=cancel");
+        }
+
+        if (currentMode = MODE_TRI) {
+            do Output.printString("Triangle: f=fill  e=empty");
+            do Output.moveCursor(row+1,col);
+            do Output.printString("Mark 3 vertices.");
+            do Output.moveCursor(row+2,col);
+            do Output.printString("Enter=mark  ESC=cancel");
+        }
+
+        if (currentMode = MODE_CLEAR) {
+            do Output.printString("board has been cleared.");
+        }
         return;
     }
-
-    //* Restores the drawing canvas from the temporary buffer. */
-    method void hideInstructions() {
-        // ... copy buffer content to screen
-        // do Memory.deAlloc(screenBuffer);
-        return;
-    }
-
-    
-
-// ############################################################################################
-    
-
-
 
 // ############################################################################################
 
@@ -622,12 +686,6 @@ class ToolsControl {
      * This method must be called explicitly when the object is no longer needed.
      */
     method void dispose() {
-        // 1) free any remaining buffers
-        if (hasBuf) {
-            do screenBuffer.dispose();
-            let screenBuffer = null;
-            let hasBuf = false;
-        }
         // 2) free other arrays/strings you created with 'new' (if any)
         //    e.g., if you had: field Array modes; then: if (~(modes = null)) { do Array.dispose(modes); let modes = null; }
 
