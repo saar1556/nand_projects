@@ -35,16 +35,18 @@ class ToolsControl {
     static int TOOL_Y1,TOOL_X1, TOOL_X2, TOOL_Y2, VERT_EDG ,HOR_EDG, BTN_TOP, BTN_BOT, BTN_WID, BTN_PAD;
 
     /** Const Params */
-    static int NUM_BTNS, PEN_SIZE;
+    static int NUM_BTNS;
     static int PEN,ERASE,RECTANGLE,CIRCLE,TRIANGLE,CLEAR;
+    static String PEN_CHAR,ERASE_CHAR,REC_CHAR,CIR_CHAR,TRI_CHAR,CLEAR_CHAR,RESIZE_CHAR;
 
     /** dynamic params */
-    field int currentMode;
+    field int currentMode,pen_size;
     field Array btn_locs;
 
     /** Constructor */
     constructor ToolsControl new() {
 
+        // keys
         let PEN       = 66;  // "B" (black)
         let ERASE     = 87;  // "W" (white)
         let RECTANGLE = 82;  // "R" (rectangle)
@@ -52,6 +54,15 @@ class ToolsControl {
         let TRIANGLE  = 84;  // "T" (triangle)
         let CLEAR     = 88;  // "X"
 
+        let PEN_CHAR = "b";
+        let ERASE_CHAR = "w";
+        let REC_CHAR = "r";
+        let CIR_CHAR = "c";
+        let TRI_CHAR = "t";
+        let CLEAR_CHAR = "x";
+        let RESIZE_CHAR = "+/-";
+
+        // each mode index
         let MODE_PEN    = 0;
         let MODE_ERASE  = 1;
         let MODE_RECT   = 2;
@@ -60,23 +71,22 @@ class ToolsControl {
         let MODE_CLEAR  = 5;
         let ADJ_SIZE    = 6;
 
+        // layout
         let TOOL_Y1  = 220;
         let TOOL_Y2  = 242;
         let TOOL_X1  = 0;
         let TOOL_X2  = 227;
         let VERT_EDG = 255;
-
         let HOR_EDG = 511;
         let BTN_TOP = 224;
         let BTN_BOT = 240;
-
         let BTN_WID = 16;
         let BTN_PAD = 2;
         let NUM_BTNS = 7;
-        let PEN_SIZE = 5;
 
+        // general purpose variables
+        let pen_size = 5;
         let currentMode = MODE_PEN;
-
         let btn_locs = Array.new(NUM_BTNS);
         do calculateLocations();
 
@@ -127,18 +137,17 @@ class ToolsControl {
         do drawCircle((32*BTN_TOP) + (btn_locs[MODE_CIRCLE]/16)); // mode circle
         do drawTriangle((32*BTN_TOP) + (btn_locs[MODE_TRI]/16)); // more triangle
         do drawClear((32*BTN_TOP) + (btn_locs[MODE_CLEAR]/16)); // clear
-        do drawPenSize(PEN_SIZE);
+        do drawPenSize(pen_size);
         
         // initialize pen UI by default
         do drawBorder(MODE_PEN,true);
         do printInstruciton();
+        do drawChars();
 
         // leave color black as default
         do Screen.setColor(true);
 
-
-        do drawChars();
-       return;
+        return;
     }
 
     method void drawBorder(int mode, boolean selected) {
@@ -575,13 +584,13 @@ class ToolsControl {
         let i = 0;
         let row = 22;
 
-        let chars[MODE_PEN] = "b";
-        let chars[MODE_ERASE] = "w";
-        let chars[MODE_RECT] = "r";
-        let chars[MODE_CIRCLE] = "c";
-        let chars[MODE_TRI] = "t";
-        let chars[MODE_CLEAR] = "x";
-        let chars[ADJ_SIZE] = "+/-";
+        let chars[MODE_PEN] = PEN_CHAR;
+        let chars[MODE_ERASE] = ERASE_CHAR;
+        let chars[MODE_RECT] = REC_CHAR;
+        let chars[MODE_CIRCLE] = CIR_CHAR;
+        let chars[MODE_TRI] = TRI_CHAR;
+        let chars[MODE_CLEAR] = CLEAR_CHAR;
+        let chars[ADJ_SIZE] = RESIZE_CHAR;
 
         while (i < NUM_BTNS) {
                 let col = (btn_locs[i] + (BTN_WID/2))/8;
@@ -593,7 +602,6 @@ class ToolsControl {
         do chars.dispose();
         return;
     }
-
 
 
 // ############################################################################################
@@ -652,27 +660,27 @@ class ToolsControl {
         }
 
         if (currentMode = MODE_RECT) {
-            do Output.printString("Rectagnle: f=fill  e=empty");
+            do Output.printString("Rectagnle: PICK f=fill,e=empty THEN");
             do Output.moveCursor(row+1,col);
             do Output.printString("Mark diagonal edges.");
             do Output.moveCursor(row+2,col);
-            do Output.printString("Enter=mark,ESC=cancel");
+            do Output.printString("Enter=mark,q=cancel");
         }
 
         if (currentMode = MODE_CIRCLE) {
-            do Output.printString("Circle: f=fill  e=empty");
+            do Output.printString("Circle: PICK f=fill,e=empty THEN");
             do Output.moveCursor(row+1,col);
             do Output.printString("Mark center then edge.");
             do Output.moveCursor(row+2,col);
-            do Output.printString("Enter=mark,ESC=cancel");
+            do Output.printString("Enter=mark,q=cancel");
         }
 
         if (currentMode = MODE_TRI) {
-            do Output.printString("Triangle: f=fill  e=empty");
+            do Output.printString("Triangle: PICK f=fill,e=empty THEN");
             do Output.moveCursor(row+1,col);
             do Output.printString("Mark 3 vertices.");
             do Output.moveCursor(row+2,col);
-            do Output.printString("Enter=mark  ESC=cancel");
+            do Output.printString("Enter=mark,q=cancel");
         }
 
         if (currentMode = MODE_CLEAR) {
