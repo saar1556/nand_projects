@@ -160,6 +160,13 @@ class JackTokenizer:
         for sentence in sentences_list:
             self.tokens.extend(token_pattern.findall(sentence))
 
+    """Return the next token without advancing the tokenizer."""
+    def peek(self) -> str | None:
+    
+        if self.tokens:
+            return self.tokens[0]
+        return None
+
         
     """
     Do we have more tokens in the input?
