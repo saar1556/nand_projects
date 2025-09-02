@@ -16,29 +16,49 @@ class SymbolTable:
 
     def __init__(self) -> None:
         """Creates a new empty symbol table."""
-        # Your code goes here!
-        pass
+        self.classSymbolTable = {}
+        self.subroutineSymbolTable = {}
+        self.kind_counters = {
+            "STATIC": 0,
+            "FIELD": 0,
+            "ARG": 0,
+            "VAR": 0,
+        }
+        self.kind_table = {
+            "STATIC": self.classSymbolTable,
+            "FIELD": self.classSymbolTable,
+            "ARG": self.subroutineSymbolTable,
+            "VAR": self.subroutineSymbolTable,
+        }
 
     def start_subroutine(self) -> None:
         """Starts a new subroutine scope (i.e., resets the subroutine's 
         symbol table).
         """
-        # Your code goes here!
-        pass
+        self.subroutineSymbolTable = {}
+        self.kind_counters["ARG"] = 0
+        self.kind_counters["VAR"] = 0
 
-    def define(self, name: str, type: str, kind: str) -> None:
+    def define(self, name: str, type_name: str, kind: str) -> None:
         """Defines a new identifier of a given name, type and kind and assigns 
         it a running index. "STATIC" and "FIELD" identifiers have a class scope, 
         while "ARG" and "VAR" identifiers have a subroutine scope.
 
         Args:
             name (str): the name of the new identifier.
-            type (str): the type of the new identifier.
+            type_name (str): the type of the new identifier.
             kind (str): the kind of the new identifier, can be:
             "STATIC", "FIELD", "ARG", "VAR".
         """
-        # Your code goes here!
-        pass
+
+        if kind not in self.kind_counters:
+            raise ValueError(f"Invalid kind: {kind}")
+
+        index = self.kind_counters[kind]
+        self.kind_counters[kind] += 1
+        self.kind_table[kind][name] = {"type": type_name, "kind": kind, "index": index}
+
+        
 
     def var_count(self, kind: str) -> int:
         """
@@ -49,8 +69,10 @@ class SymbolTable:
             int: the number of variables of the given kind already defined in 
             the current scope.
         """
-        # Your code goes here!
-        pass
+        if kind not in self.kind_counters:
+            raise ValueError(f"Invalid kind: {kind}")
+
+        return self.kind_counters[kind]
 
     def kind_of(self, name: str) -> str:
         """
@@ -61,8 +83,12 @@ class SymbolTable:
             str: the kind of the named identifier in the current scope, or None
             if the identifier is unknown in the current scope.
         """
-        # Your code goes here!
-        pass
+        if name in self.subroutineSymbolTable:
+            return self.subroutineSymbolTable[name]["kind"]
+        elif name in self.classSymbolTable:
+            return self.classSymbolTable[name]["kind"]
+        else:
+            return None
 
     def type_of(self, name: str) -> str:
         """
@@ -72,8 +98,12 @@ class SymbolTable:
         Returns:
             str: the type of the named identifier in the current scope.
         """
-        # Your code goes here!
-        pass
+        if name in self.subroutineSymbolTable:
+            return self.subroutineSymbolTable[name]["type"]
+        elif name in self.classSymbolTable:
+            return self.classSymbolTable[name]["type"]
+        else:
+            return None
 
     def index_of(self, name: str) -> int:
         """
@@ -83,5 +113,9 @@ class SymbolTable:
         Returns:
             int: the index assigned to the named identifier.
         """
-        # Your code goes here!
-        pass
+        if name in self.subroutineSymbolTable:
+            return self.subroutineSymbolTable[name]["index"]
+        elif name in self.classSymbolTable:
+            return self.classSymbolTable[name]["index"]
+        else:
+            return None
