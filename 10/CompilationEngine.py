@@ -53,8 +53,9 @@ class CompilationEngine:
         }
 
 
-        self.tokenizer.advance()
-        if self.tokenizer.keyword() != 'CLASS':
+        #self.tokenizer.advance()
+        #if self.tokenizer.keyword() != 'CLASS':
+        if self.tokenizer.peek() != 'class':
             raise ValueError("The first token must be 'class'")
             
     def print_tabs(self) -> None:
@@ -75,15 +76,16 @@ class CompilationEngine:
         Raises:
             ValueError: if the current token does not match expected_token
         """
-        print(expected_token)
-
+        '''print(f"tokens befor advance: {self.tokenizer.tokens}")  # Debug print statement
         if self.tokenizer.has_more_tokens():
             self.tokenizer.advance()
         else:
             raise ValueError(
                 f"Unexpected end of input: expected '{expected_token}' but no more tokens were available."
             )
-
+        print(f"tokens after advance: {self.tokenizer.tokens}")  # Debug print statement
+        print(f"Eating token: expected '{expected_token}', got '{self.tokenizer.current_token}'")  # Debug print statement
+        '''
         if self.tokenizer.current_token != expected_token:
             raise ValueError(
                 f"Unexpected token: got '{self.tokenizer.current_token}', expected '{expected_token}'."
@@ -95,10 +97,15 @@ class CompilationEngine:
         if token_value in self.xml_escape_chars:
             token_value = self.xml_escape_chars[token_value]
 
+        print(f"Token: {token_value}, Type: {token_type}")  # Debug print statement
         self.print_tabs()
         self.output_stream.write(f"<{self.xml_tags[token_type]}> ")
         self.output_stream.write(f"{token_value} ")
         self.output_stream.write(f"</{self.xml_tags[token_type]}>\n")
+
+        ####
+        if self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
 
     def write_headline(self, element_name: str, closing: bool) -> None:
         """
@@ -124,9 +131,13 @@ class CompilationEngine:
         XML output format:
             <class> ... </class>
         """
-    
+        if self.tokenizer.has_more_tokens():
+            self.tokenizer.advance()
+        else:
+            raise ValueError("end of input reached before class declaration")
         self.write_headline('class', False)
         self.eat('class')
+        print(self.tokenizer.current_token)
         self.eat(self.tokenizer.current_token)
         self.eat('{') 
 
@@ -294,6 +305,11 @@ class CompilationEngine:
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
         self.write_headline('varDec', closing=False)
+        if self.tokenizer.current_token != 'var':
+            raise ValueError(
+                f"Syntax error in varDec: expected 'var', got '{self.tokenizer.current_token}'"
+            )
+        self.eat('var')
         self.parse_type_and_var()
 
         while self.tokenizer.current_token == ',':
@@ -343,6 +359,16 @@ class CompilationEngine:
             raise ValueError(
                 f"Syntax error in do statement: expected subroutineName (identifier),"
                 f" got '{self.tokenizer.current_token}'"
+            )
+
+        if self.tokenizer.current_token == '.':
+            self.eat('.')
+            if self.tokenizer.token_type() == "IDENTIFIER":
+                self.eat(self.tokenizer.current_token)
+            else:
+                raise ValueError(
+                    f"Syntax error in do statement: expected subroutineName (identifier),"
+                    f" got '{self.tokenizer.current_token}'"
             )
         self.eat('(')
         self.compile_expression_list()
@@ -394,8 +420,16 @@ class CompilationEngine:
         self.compile_statements()
         self.eat('}')
 
+        if self.tokenizer.current_token == 'else':
+            self.eat('else')
+            self.eat('{')
+            self.compile_statements()
+            self.eat('}')
+
     def compile_expression(self) -> None:
         """Compiles an expression."""
+        if self.tokenizer.current_token == ';':
+            return
         self.write_headline('expression', False)
         self.compile_term()
         while self.tokenizer.symbol() in ('+', '-', '*', '/', '&', '|', '<', '>', '='):
@@ -439,7 +473,7 @@ class CompilationEngine:
 
         # keyword constant
         elif self.tokenizer.token_type() == 'KEYWORD' \
-            and self.tokenizer.keyword() in ('true', 'false', 'null', 'this'):
+            and name in ('true', 'false', 'null', 'this'):
             self.eat(name)
 
         # unary operation
@@ -476,6 +510,7 @@ class CompilationEngine:
             else:  # simple variable
                 self.eat(name)
         else:
+            print(f"Current token: {self.tokenizer.current_token}, Type: {self.tokenizer.token_type()}")  # Debug print statement
             raise ValueError(f"Unexpected token in term: {name}")
 
         self.write_headline('term', True)

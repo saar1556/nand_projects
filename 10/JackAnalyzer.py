@@ -24,7 +24,8 @@ def analyze_file(
     engine = CompilationEngine(tokenizer, output_file)
 
     output_file.write("<tokens>\n")
-    while tokenizer.has_more_tokens():
+    #while tokenizer.has_more_tokens():
+    if tokenizer.has_more_tokens():
         engine.compile_class()
     output_file.write("</tokens>\n")
 
