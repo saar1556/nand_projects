@@ -41,7 +41,7 @@ class CompilationEngine:
 
         self.tokenizer: JackTokenizer = input_stream
         self.output_stream = output_stream
-        self.indent_level = 1  # tracks the current indentation level for XML output
+        self.indent_level = 0  # tracks the current indentation level for XML output
 
         # Mapping from token types to functions returning their values
         self.token_value_getters  = {
@@ -93,11 +93,12 @@ class CompilationEngine:
         
         token_type = self.tokenizer.token_type()
         token_value = self.token_value_getters[token_type]() 
+        if token_type == 'KEYWORD':
+            token_value = token_value.lower() ###
 
         if token_value in self.xml_escape_chars:
             token_value = self.xml_escape_chars[token_value]
 
-        print(f"Token: {token_value}, Type: {token_type}")  # Debug print statement
         self.print_tabs()
         self.output_stream.write(f"<{self.xml_tags[token_type]}> ")
         self.output_stream.write(f"{token_value} ")
@@ -115,11 +116,12 @@ class CompilationEngine:
             element_name (str): name of the XML element
             closing (bool): True to write a closing tag, False to write an opening tag
         """
-        self.print_tabs()
         if closing:
             self.indent_level -= 1
+            self.print_tabs()
             self.output_stream.write(f"</{element_name}>\n")
         else:
+            self.print_tabs()
             self.output_stream.write(f"<{element_name}>\n")
             self.indent_level += 1
     
@@ -137,7 +139,6 @@ class CompilationEngine:
             raise ValueError("end of input reached before class declaration")
         self.write_headline('class', False)
         self.eat('class')
-        print(self.tokenizer.current_token)
         self.eat(self.tokenizer.current_token)
         self.eat('{') 
 
@@ -352,6 +353,7 @@ class CompilationEngine:
 
     def compile_do(self) -> None:
         """Compiles a do statement."""
+        self.write_headline('doStatement', closing=False)
         self.eat('do')
         if self.tokenizer.token_type() == "IDENTIFIER":
             self.eat(self.tokenizer.current_token)
@@ -361,10 +363,11 @@ class CompilationEngine:
                 f" got '{self.tokenizer.current_token}'"
             )
 
-        if self.tokenizer.current_token == '.':
+        if self.tokenizer.current_token == '.':  ####
             self.eat('.')
             if self.tokenizer.token_type() == "IDENTIFIER":
                 self.eat(self.tokenizer.current_token)
+
             else:
                 raise ValueError(
                     f"Syntax error in do statement: expected subroutineName (identifier),"
@@ -374,9 +377,11 @@ class CompilationEngine:
         self.compile_expression_list()
         self.eat(')')
         self.eat(';')
+        self.write_headline('doStatement', True)
 
     def compile_let(self) -> None:
         """Compiles a let statement."""
+        self.write_headline('letStatement', closing=False)
         self.eat('let')
         if self.tokenizer.token_type() == "IDENTIFIER":
             self.eat(self.tokenizer.current_token)
@@ -393,9 +398,11 @@ class CompilationEngine:
         self.eat('=')
         self.compile_expression()
         self.eat(';')
+        self.write_headline('letStatement', True)
 
     def compile_while(self) -> None:
         """Compiles a while statement."""
+        self.write_headline('whileStatement', closing=False)
         self.eat('while')
         self.eat('(')
         self.compile_expression()
@@ -403,15 +410,19 @@ class CompilationEngine:
         self.eat('{')
         self.compile_statements()
         self.eat('}')
+        self.write_headline('whileStatement', True)
 
     def compile_return(self) -> None:
         """Compiles a return statement."""
+        self.write_headline('returnStatement', closing=False)
         self.eat('return')
         self.compile_expression()
         self.eat(';')
+        self.write_headline('returnStatement', True)
 
     def compile_if(self) -> None:
         """Compiles a if statement, possibly with a trailing else clause."""
+        self.write_headline('ifStatement', closing=False)
         self.eat('if')
         self.eat('(')
         self.compile_expression()
@@ -425,10 +436,12 @@ class CompilationEngine:
             self.eat('{')
             self.compile_statements()
             self.eat('}')
+        self.write_headline('ifStatement', True)
+
 
     def compile_expression(self) -> None:
         """Compiles an expression."""
-        if self.tokenizer.current_token == ';':
+        if self.tokenizer.current_token == ';': ####
             return
         self.write_headline('expression', False)
         self.compile_term()
@@ -484,7 +497,7 @@ class CompilationEngine:
         # parenthesized expression
         elif name == '(':
             self.eat('(')
-            self.compile_expression_list()
+            self.compile_expression() ####compile_expression_list()
             self.eat(')')
 
         # identifier: variable, array access, or subroutine call
@@ -510,7 +523,6 @@ class CompilationEngine:
             else:  # simple variable
                 self.eat(name)
         else:
-            print(f"Current token: {self.tokenizer.current_token}, Type: {self.tokenizer.token_type()}")  # Debug print statement
             raise ValueError(f"Unexpected token in term: {name}")
 
         self.write_headline('term', True)
