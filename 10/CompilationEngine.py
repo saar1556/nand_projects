@@ -52,9 +52,7 @@ class CompilationEngine:
             "STRING_CONST" : self.tokenizer.string_val
         }
 
-
-        #self.tokenizer.advance()
-        #if self.tokenizer.keyword() != 'CLASS':
+        # Start the tokenization process
         if self.tokenizer.peek() != 'class':
             raise ValueError("The first token must be 'class'")
             
@@ -94,7 +92,7 @@ class CompilationEngine:
         token_type = self.tokenizer.token_type()
         token_value = self.token_value_getters[token_type]() 
         if token_type == 'KEYWORD':
-            token_value = token_value.lower() ###
+            token_value = token_value.lower()
 
         if token_value in self.xml_escape_chars:
             token_value = self.xml_escape_chars[token_value]
@@ -104,7 +102,6 @@ class CompilationEngine:
         self.output_stream.write(f"{token_value} ")
         self.output_stream.write(f"</{self.xml_tags[token_type]}>\n")
 
-        ####
         if self.tokenizer.has_more_tokens():
             self.tokenizer.advance()
 
@@ -363,7 +360,7 @@ class CompilationEngine:
                 f" got '{self.tokenizer.current_token}'"
             )
 
-        if self.tokenizer.current_token == '.':  ####
+        if self.tokenizer.current_token == '.':
             self.eat('.')
             if self.tokenizer.token_type() == "IDENTIFIER":
                 self.eat(self.tokenizer.current_token)
@@ -441,7 +438,7 @@ class CompilationEngine:
 
     def compile_expression(self) -> None:
         """Compiles an expression."""
-        if self.tokenizer.current_token == ';': ####
+        if self.tokenizer.current_token in (';', ')', '}'): 
             return
         self.write_headline('expression', False)
         self.compile_term()
