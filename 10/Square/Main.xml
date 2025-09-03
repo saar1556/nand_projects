@@ -1,3 +1,4 @@
+<tokens>
 <class>
   <keyword> class </keyword>
   <identifier> Main </identifier>
@@ -242,3 +243,4 @@
   </subroutineDec>
   <symbol> } </symbol>
 </class>
+</tokens>
