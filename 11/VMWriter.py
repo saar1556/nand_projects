@@ -42,6 +42,7 @@ class VMWriter:
         """Creates a new file and prepares it for writing VM commands."""
         self.output = output_stream
 
+    
     def write_push(self, segment: str, index: int) -> None:
         """Writes a VM push command.
 
