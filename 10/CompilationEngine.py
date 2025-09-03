@@ -8,8 +8,6 @@ Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 import typing
 from JackTokenizer import JackTokenizer
 
-
-
 class CompilationEngine:
     """
     Parses a stream of Jack tokens and writes its
@@ -24,20 +22,26 @@ class CompilationEngine:
         "INT_CONST" : "integerConstant",
         "STRING_CONST" : "stringConstant"
         }
+    
+    xml_escape_chars = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;'
+    }
 
-
-    """
-    Initializes a new CompilationEngine.
-
-    Args:
-        tokenizer (JackTokenizer): the tokenizer providing the input tokens
-        output_stream: a writable stream where XML output is written
-    """
+    
     def __init__(self, input_stream: JackTokenizer, output_stream) -> None:
-        
+        """
+        Initializes a new CompilationEngine.
+
+        Args:
+            tokenizer (JackTokenizer): the tokenizer providing the input tokens
+            output_stream: a writable stream where XML output is written
+        """
+
         self.tokenizer: JackTokenizer = input_stream
         self.output_stream = output_stream
-        self.indent_level = 0  # tracks the current indentation level for XML output
+        self.indent_level = 1  # tracks the current indentation level for XML output
 
         # Mapping from token types to functions returning their values
         self.token_value_getters  = {
@@ -47,27 +51,33 @@ class CompilationEngine:
             "INT_CONST" : self.tokenizer.int_val,
             "STRING_CONST" : self.tokenizer.string_val
         }
+
+
+        self.tokenizer.advance()
+        if self.tokenizer.keyword() != 'CLASS':
+            raise ValueError("The first token must be 'class'")
             
-
-    """
-        Writes indentation spaces to the output stream according to the current level.
-    """
     def print_tabs(self) -> None:
-        for i in range(self.indent_level):
+        """
+            Writes indentation spaces to the output stream according to the current level.
+        """
+        for _ in range(self.indent_level):
             self.output_stream.write('  ')
-    
-    """
-    Consumes the current token, writes it as an XML element, 
-    and advances to the next token.
-
-    Args:
-        expected_token (str): the token that is expected at this point
-
-    Raises:
-        ValueError: if the current token does not match expected_token
-    """
+     
     def eat(self, expected_token: str) -> None:
-        if self.tokenizer.has_more_commands():
+        """
+        Consumes the current token, writes it as an XML element, 
+        and advances to the next token.
+
+        Args:
+            expected_token (str): the token that is expected at this point
+
+        Raises:
+            ValueError: if the current token does not match expected_token
+        """
+        print(expected_token)
+
+        if self.tokenizer.has_more_tokens():
             self.tokenizer.advance()
         else:
             raise ValueError(
@@ -82,20 +92,22 @@ class CompilationEngine:
         token_type = self.tokenizer.token_type()
         token_value = self.token_value_getters[token_type]() 
 
+        if token_value in self.xml_escape_chars:
+            token_value = self.xml_escape_chars[token_value]
+
         self.print_tabs()
         self.output_stream.write(f"<{self.xml_tags[token_type]}> ")
-        self.output_stream.write(f"<{token_value}> ")
+        self.output_stream.write(f"{token_value} ")
         self.output_stream.write(f"</{self.xml_tags[token_type]}>\n")
 
-    
-    """
-    Writes an XML opening or closing tag with proper indentation.
-
-    Args:
-        element_name (str): name of the XML element
-        closing (bool): True to write a closing tag, False to write an opening tag
-    """
     def write_headline(self, element_name: str, closing: bool) -> None:
+        """
+        Writes an XML opening or closing tag with proper indentation.
+
+        Args:
+            element_name (str): name of the XML element
+            closing (bool): True to write a closing tag, False to write an opening tag
+        """
         self.print_tabs()
         if closing:
             self.indent_level -= 1
@@ -104,15 +116,14 @@ class CompilationEngine:
             self.output_stream.write(f"<{element_name}>\n")
             self.indent_level += 1
     
-    
-    """
-    Compiles a complete class structure in Jack and writes its XML representation.
-    class: 'class' className '{' classVarDec* subroutineDec* '}'
+    def compile_class(self) -> None:  
+        """
+        Compiles a complete class structure in Jack and writes its XML representation.
+        class: 'class' className '{' classVarDec* subroutineDec* '}'
 
-    XML output format:
-        <class> ... </class>
-    """
-    def compile_class(self) -> None:
+        XML output format:
+            <class> ... </class>
+        """
     
         self.write_headline('class', False)
         self.eat('class')
@@ -128,14 +139,13 @@ class CompilationEngine:
         self.eat('}')
         self.write_headline('class', True)
 
-    
-    """
-    Compiles a static declaration or a field declaration.
-    classVarDec: ('static' | 'field') type varName (',' varName)* ';'
-    """
     def compile_class_var_dec(self) -> None:
+        """
+        Compiles a static declaration or a field declaration.
+        classVarDec: ('static' | 'field') type varName (',' varName)* ';'
+        """
         
-        self.write_headline('classVarDec', False)
+        self.write_headline('classVarDec', closing=False)
 
         # ('static' | 'field')
         if self.tokenizer.current_token in ('static', 'field'):
@@ -181,15 +191,13 @@ class CompilationEngine:
 
         self.write_headline('classVarDec', True)
 
-        
-        
-    """
-    Compiles a complete method, function, or constructor.
-    subroutineDec: ('constructor' | 'function' | 'method') ('void' | type) 
-            subroutineName '(' parameterList ')' subroutineBody
-    subroutineBody: '{' varDec* statements '}'
-    """
     def compile_subroutine(self) -> None:
+        """
+        Compiles a complete method, function, or constructor.
+        subroutineDec: ('constructor' | 'function' | 'method') ('void' | type) 
+                subroutineName '(' parameterList ')' subroutineBody
+        subroutineBody: '{' varDec* statements '}'
+        """
         self.write_headline('subroutineDec', False)
 
         # ('constructor' | 'function' | 'method')
@@ -199,7 +207,7 @@ class CompilationEngine:
             raise ValueError(f"Expected subroutine keyword, got {self.tokenizer.current_token}")
 
         # ('void' | type)
-        if self.tokenizer.current_token in ('int', 'char', 'boolean', 'void') or /
+        if self.tokenizer.current_token in ('int', 'char', 'boolean', 'void') or \
             self.tokenizer.token_type() == "IDENTIFIER": # className
             self.eat(self.tokenizer.current_token)
         else:
@@ -234,14 +242,13 @@ class CompilationEngine:
 
         self.write_headline('subroutineDec', True)
         
-    
-    """
-    Parses a single parameter: a type followed by a variable name.
-    Example: "int x" or "Square squareObj".
-    """
-    def parse_type_and_var() -> None:
-        if (self.tokenizer.current_token in ('int', 'char', 'boolean') or 
-                self.tokenizer.token_type() == "IDENTIFIER"): 
+    def parse_type_and_var(self) -> None:
+        """
+        Parses a single parameter: a type followed by a variable name.
+        Example: "int x" or "Square squareObj".
+        """
+        if (self.tokenizer.current_token in ('int', 'char', 'boolean') or \
+            self.tokenizer.token_type() == "IDENTIFIER"): 
             # consume type
             self.eat(self.tokenizer.current_token)
             
@@ -259,19 +266,18 @@ class CompilationEngine:
                 f"but got '{self.tokenizer.current_token}' instead"
             )
     
-    
-    """
-    Compiles a (possibly empty) parameter list, not including the enclosing "()".
-
-    Grammar:
-        parameterList: ((type varName) (',' type varName)*)?
-
-    Examples:
-        ()                      -> empty parameter list
-        (int x)                 -> one parameter
-        (int x, boolean flag)   -> multiple parameters
-    """
     def compile_parameter_list(self) -> None:
+        """
+        Compiles a (possibly empty) parameter list, not including the enclosing "()".
+
+        Grammar:
+            parameterList: ((type varName) (',' type varName)*)?
+
+        Examples:
+            ()                      -> empty parameter list
+            (int x)                 -> one parameter
+            (int x, boolean flag)   -> multiple parameters
+        """
         self.write_headline('parameterList', False)
 
         # Loop until we reach the closing parenthesis ')'
@@ -285,72 +291,141 @@ class CompilationEngine:
 
         self.write_headline('parameterList', True)
 
-
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
-        # Your code goes here!
-        pass
+        self.write_headline('varDec', closing=False)
+        self.parse_type_and_var()
+
+        while self.tokenizer.current_token == ',':
+            self.eat(',')
+            if self.tokenizer.token_type() == "IDENTIFIER":
+                self.eat(self.tokenizer.current_token)
+            else:
+                raise ValueError(
+                    f"Syntax error in varDec: expected varName after ',',"
+                    f" got '{self.tokenizer.current_token}'"
+                )
+        self.eat(';')
+        self.write_headline('varDec', True)
 
     def compile_statements(self) -> None:
-        """Compiles a sequence of statements, not including the enclosing 
+        """
+        Compiles a sequence of statements, not including the enclosing 
         "{}".
         """
-        # Your code goes here!
-        pass
+        self.write_headline('statements', False)
+
+        while self.tokenizer.current_token in (
+            'let', 'if', 'while', 'do', 'return'):
+            if self.tokenizer.current_token == 'let':
+                self.compile_let()
+            elif self.tokenizer.current_token == 'if':
+                self.compile_if()
+            elif self.tokenizer.current_token == 'while':
+                self.compile_while()
+            elif self.tokenizer.current_token == 'do':
+                self.compile_do()
+            elif self.tokenizer.current_token == 'return':
+                self.compile_return()
+            else:
+                raise ValueError(
+                    f"Unexpected statement type: {self.tokenizer.current_token}"
+                )
+
+        self.write_headline('statements', True)
 
     def compile_do(self) -> None:
         """Compiles a do statement."""
-        # Your code goes here!
-        pass
+        self.eat('do')
+        if self.tokenizer.token_type() == "IDENTIFIER":
+            self.eat(self.tokenizer.current_token)
+        else:
+            raise ValueError(
+                f"Syntax error in do statement: expected subroutineName (identifier),"
+                f" got '{self.tokenizer.current_token}'"
+            )
+        self.eat('(')
+        self.compile_expression_list()
+        self.eat(')')
+        self.eat(';')
 
     def compile_let(self) -> None:
         """Compiles a let statement."""
-        # Your code goes here!
-        pass
+        self.eat('let')
+        if self.tokenizer.token_type() == "IDENTIFIER":
+            self.eat(self.tokenizer.current_token)
+        else:
+            raise ValueError(
+                f"Syntax error in let statement: expected varName (identifier),"
+                f" got '{self.tokenizer.current_token}'"
+        )
+
+        if self.tokenizer.symbol() == '[':
+            self.eat('[')
+            self.compile_expression()
+            self.eat(']')
+        self.eat('=')
+        self.compile_expression()
+        self.eat(';')
 
     def compile_while(self) -> None:
         """Compiles a while statement."""
-        # Your code goes here!
-        pass
+        self.eat('while')
+        self.eat('(')
+        self.compile_expression()
+        self.eat(')')
+        self.eat('{')
+        self.compile_statements()
+        self.eat('}')
 
     def compile_return(self) -> None:
         """Compiles a return statement."""
-        # Your code goes here!
-        pass
+        self.eat('return')
+        self.compile_expression()
+        self.eat(';')
 
     def compile_if(self) -> None:
         """Compiles a if statement, possibly with a trailing else clause."""
-        # Your code goes here!
-        pass
+        self.eat('if')
+        self.eat('(')
+        self.compile_expression()
+        self.eat(')')
+        self.eat('{')
+        self.compile_statements()
+        self.eat('}')
 
     def compile_expression(self) -> None:
         """Compiles an expression."""
-        # Your code goes here!
-        pass
+        self.write_headline('expression', False)
+        self.compile_term()
+        while self.tokenizer.symbol() in ('+', '-', '*', '/', '&', '|', '<', '>', '='):
+            self.eat(self.tokenizer.current_token)
+            self.compile_term()
+        self.write_headline('expression', True)
 
-    
-    """
-    Compiles a single term in a Jack expression.
-
-    A term can be one of the following:
-        - integerConstant
-        - stringConstant
-        - keywordConstant (true, false, null, this)
-        - varName (simple variable)
-        - varName '[' expression ']' (array access)
-        - subroutineCall:
-            - subroutineName '(' expressionList ')'
-            - (className | varName) '.' subroutineName '(' expressionList ')'
-        - '(' expression ')' (parenthesized expression)
-        - unaryOp term (unary operations like -x or ~x)
-
-    Notes:
-        - If the current token is an identifier, a single look-ahead token
-          (peek) is sufficient to distinguish between a variable, array access, 
-          or subroutine call.
-        - Raises ValueError if the current token does not match any valid term.
-    """
     def compile_term(self) -> None:
+        """
+        Compiles a single term in a Jack expression.
+
+        A term can be one of the following:
+            - integerConstant
+            - stringConstant
+            - keywordConstant (true, false, null, this)
+            - varName (simple variable)
+            - varName '[' expression ']' (array access)
+            - subroutineCall:
+                - subroutineName '(' expressionList ')'
+                - (className | varName) '.' subroutineName '(' expressionList ')'
+            - '(' expression ')' (parenthesized expression)
+            - unaryOp term (unary operations like -x or ~x)
+
+        Notes:
+            - If the current token is an identifier, a single look-ahead token
+            (peek) is sufficient to distinguish between a variable, array access, 
+            or subroutine call.
+            - Raises ValueError if the current token does not match any valid term.
+        """
+
         self.write_headline('term', False)
         name = self.tokenizer.current_token
         
@@ -363,12 +438,14 @@ class CompilationEngine:
             self.eat(name)
 
         # keyword constant
-        elif self.tokenizer.token_type() == 'KEYWORD':
+        elif self.tokenizer.token_type() == 'KEYWORD' \
+            and self.tokenizer.keyword() in ('true', 'false', 'null', 'this'):
             self.eat(name)
 
         # unary operation
-        elif self.tokenizer.current_token in {'-', '~', '^', '#'}:
+        elif name in {'-', '~', '^', '#'}:
             self.eat(name)
+            self.compile_term()
 
         # parenthesized expression
         elif name == '(':
@@ -379,7 +456,6 @@ class CompilationEngine:
         # identifier: variable, array access, or subroutine call
         elif self.tokenizer.token_type() == "IDENTIFIER":
             next_tok = self.tokenizer.peek()
-            
             if next_tok == '[':   # array access
                 self.eat(name)
                 self.eat('[')
@@ -404,19 +480,77 @@ class CompilationEngine:
 
         self.write_headline('term', True)
         
-
-    """Compiles a (possibly empty) comma-separated list of expressions."""
     def compile_expression_list(self) -> None:
-        
-        self.write_headline('expressionList', False)
+            """Compiles a (possibly empty) comma-separated list of expressions."""
+            self.write_headline('expressionList', False)
 
-        # Loop until we reach the closing parenthesis ')'
-        while self.tokenizer.current_token != ')':
-            self.compile_expression()
-
-            # Handle additional parameters separated by commas
-            while self.tokenizer.current_token == ',':
-                self.eat(',') 
+            if self.tokenizer.current_token != ')':
                 self.compile_expression()
+                while self.tokenizer.current_token == ',':
+                    self.eat(',')
+                    self.compile_expression()
+            
+            self.write_headline('expressionList', True)
 
-        self.write_headline('expressionList', True)
+
+    # def compile_term(self) -> None:
+    #         """
+    #         Compiles a single term in a Jack expression.
+
+    #         A term can be one of the following:
+    #             - integerConstant
+    #             - stringConstant
+    #             - keywordConstant (true, false, null, this)
+    #             - varName (simple variable)
+    #             - varName '[' expression ']' (array access)
+    #             - subroutineCall:
+    #                 - subroutineName '(' expressionList ')'
+    #                 - (className | varName) '.' subroutineName '(' expressionList ')'
+    #             - '(' expression ')' (parenthesized expression)
+    #             - unaryOp term (unary operations like -x or ~x)
+
+    #         Notes:
+    #             - If the current token is an identifier, a single look-ahead token
+    #             (peek) is sufficient to distinguish between a variable, array access, 
+    #             or subroutine call.
+    #             - Raises ValueError if the current token does not match any valid term.
+    #         """
+    #         self.write_headline('term', False)
+    #         if self.tokenizer.token_type() in ('INT_CONST', 'STRING_CONST'):
+    #             self.eat(self.tokenizer.current_token)
+    #         elif self.tokenizer.token_type() == 'KEYWORD' and \
+    #             self.tokenizer.keyword() in ('true', 'false', 'null', 'this'):
+    #             self.eat(self.tokenizer.current_token)
+    #         elif self.tokenizer.token_type() == 'IDENTIFIER':
+    #             self.eat(self.tokenizer.current_token)
+    #             if self.tokenizer.current_token == '[':
+    #                 self.eat('[')
+    #                 self.compile_expression()
+    #                 self.eat(']')
+    #             elif self.tokenizer.current_token == '(':
+    #                 self.eat('(')
+    #                 self.compile_expression_list()
+    #                 self.eat(')')
+    #             elif self.tokenizer.current_token == '.':
+    #                 self.eat('.')
+    #                 if self.tokenizer.token_type() == 'IDENTIFIER':
+    #                     self.eat(self.tokenizer.current_token)
+    #                 else:
+    #                     raise ValueError(
+    #                         f"Syntax error in subroutine call: expected subroutineName (identifier),"
+    #                         f" got '{self.tokenizer.current_token}'"
+    #                     )
+    #                 self.eat('(')
+    #                 self.compile_expression_list()
+    #                 self.eat(')')
+    #         elif self.tokenizer.current_token == '(':
+    #             self.eat('(')
+    #             self.compile_expression()
+    #             self.eat(')')
+    #         elif self.tokenizer.symbol in ('-', '~'):
+    #             self.eat(self.tokenizer.current_token)
+    #             self.compile_term()
+    #         else:
+    #             raise ValueError(f"Unexpected token in term: {self.tokenizer.current_token}")
+    #         self.write_headline('term', True)
+
