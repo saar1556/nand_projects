@@ -52,7 +52,8 @@ class CompilationEngine:
             "STRING_CONST" : self.tokenizer.string_val
         }
 
-        self.tokenizer.advance()  # Initialize the tokenizer to the first token
+
+        self.tokenizer.advance()
         if self.tokenizer.keyword() != 'CLASS':
             raise ValueError("The first token must be 'class'")
             
@@ -74,7 +75,9 @@ class CompilationEngine:
         Raises:
             ValueError: if the current token does not match expected_token
         """
-        if not self.tokenizer.has_more_commands():
+        print(expected_token)
+
+        if self.tokenizer.has_more_tokens():
             self.tokenizer.advance()
         else:
             raise ValueError(
@@ -400,166 +403,154 @@ class CompilationEngine:
             self.compile_term()
         self.write_headline('expression', True)
 
-    # def compile_term(self) -> None:
-    #     """
-    #     Compiles a single term in a Jack expression.
-
-    #     A term can be one of the following:
-    #         - integerConstant
-    #         - stringConstant
-    #         - keywordConstant (true, false, null, this)
-    #         - varName (simple variable)
-    #         - varName '[' expression ']' (array access)
-    #         - subroutineCall:
-    #             - subroutineName '(' expressionList ')'
-    #             - (className | varName) '.' subroutineName '(' expressionList ')'
-    #         - '(' expression ')' (parenthesized expression)
-    #         - unaryOp term (unary operations like -x or ~x)
-
-    #     Notes:
-    #         - If the current token is an identifier, a single look-ahead token
-    #         (peek) is sufficient to distinguish between a variable, array access, 
-    #         or subroutine call.
-    #         - Raises ValueError if the current token does not match any valid term.
-    #     """
-
-    #     self.write_headline('term', False)
-    #     name = self.tokenizer.current_token
-        
-    #     # integer constant
-    #     if self.tokenizer.token_type() == 'INT_CONST':
-    #         self.eat(name)
-        
-    #     # string constant
-    #     elif self.tokenizer.token_type() == 'STRING_CONST':
-    #         self.eat(name)
-
-    #     # keyword constant
-    #     elif self.tokenizer.token_type() == 'KEYWORD':
-    #         self.eat(name)
-
-    #     # unary operation
-    #     elif self.tokenizer.current_token in {'-', '~', '^', '#'}:
-    #         self.eat(name)
-
-    #     # parenthesized expression
-    #     elif name == '(':
-    #         self.eat('(')
-    #         self.compile_expression_list()
-    #         self.eat(')')
-
-    #     # identifier: variable, array access, or subroutine call
-    #     elif self.tokenizer.token_type() == "IDENTIFIER":
-    #         next_tok = self.tokenizer.peek()
-            
-    #         if next_tok == '[':   # array access
-    #             self.eat(name)
-    #             self.eat('[')
-    #             self.compile_expression()
-    #             self.eat(']')
-    #         elif next_tok == '(':  # simple subroutine call
-    #             self.eat(name)
-    #             self.eat('(')
-    #             self.compile_expression_list()
-    #             self.eat(')')
-    #         elif next_tok == '.':  # subroutine call with class or object
-    #             self.eat(name)
-    #             self.eat('.')
-    #             self.eat(self.tokenizer.current_token)
-    #             self.eat('(')
-    #             self.compile_expression_list()
-    #             self.eat(')')
-    #         else:  # simple variable
-    #             self.eat(name)
-    #     else:
-    #         raise ValueError(f"Unexpected token in term: {name}")
-
-    #     self.write_headline('term', True)
-        
-    # def compile_expression_list(self) -> None:
-    #     """Compiles a (possibly empty) comma-separated list of expressions."""
-        
-    #     self.write_headline('expressionList', False)
-
-    #     # Loop until we reach the closing parenthesis ')'
-    #     while self.tokenizer.current_token != ')':
-    #         self.compile_expression()
-
-    #         # Handle additional parameters separated by commas
-    #         while self.tokenizer.current_token == ',':
-    #             self.eat(',') 
-    #             self.compile_expression()
-
-    #     self.write_headline('expressionList', True)
-
-
     def compile_term(self) -> None:
-            """
-            Compiles a single term in a Jack expression.
+        """
+        Compiles a single term in a Jack expression.
 
-            A term can be one of the following:
-                - integerConstant
-                - stringConstant
-                - keywordConstant (true, false, null, this)
-                - varName (simple variable)
-                - varName '[' expression ']' (array access)
-                - subroutineCall:
-                    - subroutineName '(' expressionList ')'
-                    - (className | varName) '.' subroutineName '(' expressionList ')'
-                - '(' expression ')' (parenthesized expression)
-                - unaryOp term (unary operations like -x or ~x)
+        A term can be one of the following:
+            - integerConstant
+            - stringConstant
+            - keywordConstant (true, false, null, this)
+            - varName (simple variable)
+            - varName '[' expression ']' (array access)
+            - subroutineCall:
+                - subroutineName '(' expressionList ')'
+                - (className | varName) '.' subroutineName '(' expressionList ')'
+            - '(' expression ')' (parenthesized expression)
+            - unaryOp term (unary operations like -x or ~x)
 
-            Notes:
-                - If the current token is an identifier, a single look-ahead token
-                (peek) is sufficient to distinguish between a variable, array access, 
-                or subroutine call.
-                - Raises ValueError if the current token does not match any valid term.
-            """
-            self.write_headline('term', False)
-            if self.tokenizer.token_type() in ('INT_CONST', 'STRING_CONST'):
-                self.eat(self.tokenizer.current_token)
-            elif self.tokenizer.token_type() == 'KEYWORD' and \
-                self.tokenizer.keyword() in ('true', 'false', 'null', 'this'):
-                self.eat(self.tokenizer.current_token)
-            elif self.tokenizer.token_type() == 'IDENTIFIER':
-                self.eat(self.tokenizer.current_token)
-                if self.tokenizer.current_token == '[':
-                    self.eat('[')
-                    self.compile_expression()
-                    self.eat(']')
-                elif self.tokenizer.current_token == '(':
-                    self.eat('(')
-                    self.compile_expression_list()
-                    self.eat(')')
-                elif self.tokenizer.current_token == '.':
-                    self.eat('.')
-                    if self.tokenizer.token_type() == 'IDENTIFIER':
-                        self.eat(self.tokenizer.current_token)
-                    else:
-                        raise ValueError(
-                            f"Syntax error in subroutine call: expected subroutineName (identifier),"
-                            f" got '{self.tokenizer.current_token}'"
-                        )
-                    self.eat('(')
-                    self.compile_expression_list()
-                    self.eat(')')
-            elif self.tokenizer.current_token == '(':
-                self.eat('(')
+        Notes:
+            - If the current token is an identifier, a single look-ahead token
+            (peek) is sufficient to distinguish between a variable, array access, 
+            or subroutine call.
+            - Raises ValueError if the current token does not match any valid term.
+        """
+
+        self.write_headline('term', False)
+        name = self.tokenizer.current_token
+        
+        # integer constant
+        if self.tokenizer.token_type() == 'INT_CONST':
+            self.eat(name)
+        
+        # string constant
+        elif self.tokenizer.token_type() == 'STRING_CONST':
+            self.eat(name)
+
+        # keyword constant
+        elif self.tokenizer.token_type() == 'KEYWORD' \
+            and self.tokenizer.keyword() in ('true', 'false', 'null', 'this'):
+            self.eat(name)
+
+        # unary operation
+        elif name in {'-', '~', '^', '#'}:
+            self.eat(name)
+            self.compile_term()
+
+        # parenthesized expression
+        elif name == '(':
+            self.eat('(')
+            self.compile_expression_list()
+            self.eat(')')
+
+        # identifier: variable, array access, or subroutine call
+        elif self.tokenizer.token_type() == "IDENTIFIER":
+            next_tok = self.tokenizer.peek()
+            if next_tok == '[':   # array access
+                self.eat(name)
+                self.eat('[')
                 self.compile_expression()
+                self.eat(']')
+            elif next_tok == '(':  # simple subroutine call
+                self.eat(name)
+                self.eat('(')
+                self.compile_expression_list()
                 self.eat(')')
-            elif self.tokenizer.symbol in ('-', '~'):
+            elif next_tok == '.':  # subroutine call with class or object
+                self.eat(name)
+                self.eat('.')
                 self.eat(self.tokenizer.current_token)
-                self.compile_term()
-            else:
-                raise ValueError(f"Unexpected token in term: {self.tokenizer.current_token}")
-            self.write_headline('term', True)
+                self.eat('(')
+                self.compile_expression_list()
+                self.eat(')')
+            else:  # simple variable
+                self.eat(name)
+        else:
+            raise ValueError(f"Unexpected token in term: {name}")
 
-
+        self.write_headline('term', True)
+        
     def compile_expression_list(self) -> None:
             """Compiles a (possibly empty) comma-separated list of expressions."""
             self.write_headline('expressionList', False)
-            self.compile_expression()
-            while self.tokenizer.current_token == ',':
-                self.eat(',')
+
+            if self.tokenizer.current_token != ')':
                 self.compile_expression()
+                while self.tokenizer.current_token == ',':
+                    self.eat(',')
+                    self.compile_expression()
+            
             self.write_headline('expressionList', True)
+
+
+    # def compile_term(self) -> None:
+    #         """
+    #         Compiles a single term in a Jack expression.
+
+    #         A term can be one of the following:
+    #             - integerConstant
+    #             - stringConstant
+    #             - keywordConstant (true, false, null, this)
+    #             - varName (simple variable)
+    #             - varName '[' expression ']' (array access)
+    #             - subroutineCall:
+    #                 - subroutineName '(' expressionList ')'
+    #                 - (className | varName) '.' subroutineName '(' expressionList ')'
+    #             - '(' expression ')' (parenthesized expression)
+    #             - unaryOp term (unary operations like -x or ~x)
+
+    #         Notes:
+    #             - If the current token is an identifier, a single look-ahead token
+    #             (peek) is sufficient to distinguish between a variable, array access, 
+    #             or subroutine call.
+    #             - Raises ValueError if the current token does not match any valid term.
+    #         """
+    #         self.write_headline('term', False)
+    #         if self.tokenizer.token_type() in ('INT_CONST', 'STRING_CONST'):
+    #             self.eat(self.tokenizer.current_token)
+    #         elif self.tokenizer.token_type() == 'KEYWORD' and \
+    #             self.tokenizer.keyword() in ('true', 'false', 'null', 'this'):
+    #             self.eat(self.tokenizer.current_token)
+    #         elif self.tokenizer.token_type() == 'IDENTIFIER':
+    #             self.eat(self.tokenizer.current_token)
+    #             if self.tokenizer.current_token == '[':
+    #                 self.eat('[')
+    #                 self.compile_expression()
+    #                 self.eat(']')
+    #             elif self.tokenizer.current_token == '(':
+    #                 self.eat('(')
+    #                 self.compile_expression_list()
+    #                 self.eat(')')
+    #             elif self.tokenizer.current_token == '.':
+    #                 self.eat('.')
+    #                 if self.tokenizer.token_type() == 'IDENTIFIER':
+    #                     self.eat(self.tokenizer.current_token)
+    #                 else:
+    #                     raise ValueError(
+    #                         f"Syntax error in subroutine call: expected subroutineName (identifier),"
+    #                         f" got '{self.tokenizer.current_token}'"
+    #                     )
+    #                 self.eat('(')
+    #                 self.compile_expression_list()
+    #                 self.eat(')')
+    #         elif self.tokenizer.current_token == '(':
+    #             self.eat('(')
+    #             self.compile_expression()
+    #             self.eat(')')
+    #         elif self.tokenizer.symbol in ('-', '~'):
+    #             self.eat(self.tokenizer.current_token)
+    #             self.compile_term()
+    #         else:
+    #             raise ValueError(f"Unexpected token in term: {self.tokenizer.current_token}")
+    #         self.write_headline('term', True)
+

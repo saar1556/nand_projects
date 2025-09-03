@@ -5,7 +5,7 @@ was written by Aviv Yaish. It is an extension to the specifications given
 as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
 Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 """
-import typing
+from typing import Union,TextIO
 from collections import deque
 import re
 
@@ -123,7 +123,7 @@ class JackTokenizer:
         'return': 'RETURN'
     }
     
-    def __init__(self, input_stream: typing.TextIO) -> None:
+    def __init__(self, input_stream: TextIO) -> None:
         """Opens the input stream and gets ready to tokenize it.
 
         Args:
@@ -155,9 +155,10 @@ class JackTokenizer:
         token_pattern = re.compile( r"\"[^\n\"]*\"|[A-Za-z_][A-Za-z0-9_]*|\d+|" + symbols_regex)
         
         for sentence in sentences_list:
-            self.tokens.extend(token_pattern.findall(sentence))
-
-    def peek(self) -> str | None:
+            temp = token_pattern.findall(sentence)
+            self.tokens.extend(temp)
+        
+    def peek(self) -> Union[str,None]:
         """Return the next token without advancing the tokenizer."""
         if self.tokens:
             return self.tokens[0]
