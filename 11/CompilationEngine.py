@@ -49,14 +49,69 @@ class CompilationEngine:
     
        
 
+    def compile_var_declaration(self, kind: str) -> None:
+        """
+        Helper for compiling variable declarations (class or subroutine).
+        kindToken type varName (',' varName)* ';'
+        """
+        # type: either keyword (int|char|boolean) or identifier (className)
+        if self.tokenizer.current_token in {'int', 'char', 'boolean'}:
+            type_name = self.tokenizer.current_token
+            self.tokenizer.advance()
+        elif self.tokenizer.token_type() == 'IDENTIFIER':
+            type_name = self.tokenizer.current_token
+            self.tokenizer.advance()
+        else:
+            raise ValueError(
+                f"Expected type (int, char, boolean, or className), "
+                f"got '{self.tokenizer.current_token}'"
+            )
+
+        # first varName
+        if self.tokenizer.token_type() != 'IDENTIFIER':
+            raise ValueError(
+                f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
+            )
+        name = self.tokenizer.current_token
+        self.SymbolTable.define(name, type_name, kind)
+        self.tokenizer.advance()
+
+        # additional varNames separated by commas
+        while self.tokenizer.current_token == ',':
+            self.tokenizer.advance()
+            if self.tokenizer.token_type() != 'IDENTIFIER':
+                raise ValueError(
+                    f"Expected varName after ',', got '{self.tokenizer.current_token}'"
+                )
+            name = self.tokenizer.current_token
+            self.SymbolTable.define(name, type_name, kind)
+            self.tokenizer.advance()
+
+        # final semicolon
+        if self.tokenizer.current_token != ';':
+            raise ValueError(
+                f"Expected ';' at the end of var declaration, got '{self.tokenizer.current_token}'"
+            )
+        self.tokenizer.advance()
+
+    
     
     """
     Compiles a static declaration or a field declaration.
     classVarDec: ('static' | 'field') type varName (',' varName)* ';'
     """
     def compile_class_var_dec(self) -> None:
-        
 
+        if self.tokenizer.current_token not in {'static', 'field'}:
+            raise ValueError(
+                f"Expected 'static' or 'field' in classVarDec, "
+                f"got '{self.tokenizer.current_token}'"
+            )
+        kind = self.tokenizer.current_token.upper()
+        self.tokenizer.advance()
+
+        # call the helper with the appropriate allowed kinds
+        self.compile_var_declaration(kind)
         
         
     """
@@ -82,14 +137,43 @@ class CompilationEngine:
         (int x, boolean flag)   -> multiple parameters
     """
     def compile_parameter_list(self) -> None:
-        
+        while self.tokenizer.current_token != ')':
+            # type: either keyword (int|char|boolean) or identifier (className)
+            if self.tokenizer.current_token in {'int', 'char', 'boolean'}:
+                type_name = self.tokenizer.current_token
+                self.tokenizer.advance()
+            elif self.tokenizer.token_type() == 'IDENTIFIER':
+                type_name = self.tokenizer.current_token
+                self.tokenizer.advance()
+            else:
+                raise ValueError(
+                    f"Expected type (int, char, boolean, or className) in parameterList, "
+                    f"got '{self.tokenizer.current_token}'"
+                )
+
+            # first varName
+            if self.tokenizer.token_type() != 'IDENTIFIER':
+                raise ValueError(
+                    f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
+                )
+            name = self.tokenizer.current_token
+            self.SymbolTable.define(name, type_name, 'ARG')
+            self.tokenizer.advance()
 
 
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
-        # Your code goes here!
-        pass
+        if self.tokenizer.current_token != 'var':
+            raise ValueError(
+                f"Expected 'var' in subroutineVarDec, "
+                f"got '{self.tokenizer.current_token}'"
+            )
+        self.tokenizer.advance()
 
+        # call the helper with the appropriate allowed kind
+        self.compile_var_declaration('VAR')
+
+    
     def compile_statements(self) -> None:
         """Compiles a sequence of statements, not including the enclosing 
         "{}".
