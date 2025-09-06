@@ -54,7 +54,7 @@ class CompilationEngine:
 
         # Start the tokenization process
         if self.tokenizer.peek() != 'class':
-            raise ValueError("The first token must be 'class'")
+            raise ValueError(f"The first token must be 'class', got '{self.tokenizer.peek()}' instead.")
             
     def print_tabs(self) -> None:
         """
@@ -442,7 +442,7 @@ class CompilationEngine:
             return
         self.write_headline('expression', False)
         self.compile_term()
-        while self.tokenizer.symbol() in ('+', '-', '*', '/', '&', '|', '<', '>', '='):
+        while self.tokenizer.current_token in ('+', '-', '*', '/', '&', '|', '<', '>', '='):
             self.eat(self.tokenizer.current_token)
             self.compile_term()
         self.write_headline('expression', True)

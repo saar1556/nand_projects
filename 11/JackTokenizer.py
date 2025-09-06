@@ -137,7 +137,6 @@ class JackTokenizer:
         for line in input_stream.read().splitlines():
             line = line.strip()
 
-            # Skip block comments
             if inside_block_comment:
                 if "*/" in line:
                     inside_block_comment = False 
@@ -147,7 +146,7 @@ class JackTokenizer:
                 if not "*/" in line: 
                     inside_block_comment = True
                 continue
-            
+
             clean_line = ""
             i = 0
             in_string = False
@@ -164,7 +163,7 @@ class JackTokenizer:
             clean_line = clean_line.strip() 
             if clean_line:             
                 sentences_list.append(clean_line)
-        
+                
         symbols_regex = "[" + "".join(re.escape(sym) for sym in self.symbols) + "]"
         token_pattern = re.compile( r"\"[^\n\"]*\"|[A-Za-z_][A-Za-z0-9_]*|\d+|" + symbols_regex)
         
