@@ -35,7 +35,7 @@ class SymbolTable:
         """Starts a new subroutine scope (i.e., resets the subroutine's 
         symbol table).
         """
-        self.subroutineSymbolTable = {}
+        self.subroutineSymbolTable.clear()
         self.kind_counters["ARG"] = 0
         self.kind_counters["VAR"] = 0
 
@@ -50,14 +50,12 @@ class SymbolTable:
             kind (str): the kind of the new identifier, can be:
             "STATIC", "FIELD", "ARG", "VAR".
         """
-
         if kind not in self.kind_counters:
             raise ValueError(f"Invalid kind: {kind}")
 
         index = self.kind_counters[kind]
         self.kind_counters[kind] += 1
         self.kind_table[kind][name] = {"type": type_name, "kind": kind, "index": index}
-
         
 
     def var_count(self, kind: str) -> int:

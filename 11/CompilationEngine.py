@@ -41,6 +41,13 @@ class CompilationEngine:
         '=': "EQ",
     }
 
+    kinds = {
+        "VAR": "LOCAL",
+        "ARG": "ARG",
+        "STATIC": "STATIC",
+        "FIELD": "THIS"
+    }
+
     
     def __init__(self, tokenizer, output_stream):
         """
@@ -64,6 +71,8 @@ class CompilationEngine:
             "INT_CONST" : self.tokenizer.int_val,
             "STRING_CONST" : self.tokenizer.string_val
         }
+
+        print(f"tokenizer: {self.tokenizer.tokens}\n\n")
 
     def advance(self) -> None:
         """Advances the tokenizer to the next token."""
@@ -98,6 +107,7 @@ class CompilationEngine:
         Grammar:
             class: 'class' className '{' classVarDec* subroutineDec* '}'
         """
+        self.advance()
         self._expect('class', 'compile_class')
         if self.tokenizer.token_type() != 'IDENTIFIER':
             raise ValueError(
@@ -144,7 +154,8 @@ class CompilationEngine:
                 f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
             )
         name = self.tokenizer.current_token
-        self.SymbolTable.define(name, type_name, kind)
+        print(f"Defining var: name={name}, type={type_name}, kind={kind}")
+        self.symbolTable.define(name, type_name, kind)
         self.advance()
 
         # additional varNames separated by commas
@@ -155,7 +166,7 @@ class CompilationEngine:
                     f"Expected varName after ',', got '{self.tokenizer.current_token}'"
                 )
             name = self.tokenizer.current_token
-            self.SymbolTable.define(name, type_name, kind)
+            self.symbolTable.define(name, type_name, kind)
             self.advance()
 
         # final semicolon
@@ -196,12 +207,12 @@ class CompilationEngine:
         
         # Start a new subroutine scope
         subroutine_type = self.tokenizer.current_token
-        self.SymbolTable.start_subroutine()
+        self.symbolTable.start_subroutine()
         self.advance()
 
         # Handle 'method': add 'this' as the first argument
         if subroutine_type == 'method':
-            self.SymbolTable.define('this', self.className, 'ARG')
+            self.symbolTable.define('this', self.className, 'ARG')
 
         # Parse return type
         void_func = False
@@ -227,19 +238,19 @@ class CompilationEngine:
         self._expect('(', 'compile_subroutine')
         self.compile_parameter_list()
         self._expect( ')', 'compile_subroutine')
-        self._expect('{', 'compile_subroutine')
+        self._expect( '{', 'compile_subroutine')
 
         # Compile all varDecs and count local variables
         while self.tokenizer.current_token == 'var':
             self.compile_var_dec()
-        n_locals = self.SymbolTable.var_count('VAR')
+        n_locals = self.symbolTable.var_count('VAR')
 
         # VM function declaration
         self.vm_writer.write_function(subroutine_name, n_locals)
         
         # Handle 'constructor': allocate memory for the new object
         if subroutine_type == 'constructor':
-            n_fields = self.SymbolTable.var_count('FIELD')
+            n_fields = self.symbolTable.var_count('FIELD')
             self.vm_writer.write_push("CONST", n_fields)
             self.vm_writer.write_call("Memory.alloc", 1)
             self.vm_writer.write_pop("POINTER", 0)
@@ -249,7 +260,7 @@ class CompilationEngine:
             self.vm_writer.write_pop("POINTER", 0)
 
         # Compile statements inside the subroutine
-        self.write_statements()
+        self.compile_statements()
         self._expect( '}', 'compile_subroutine')
 
         # Remove garbage return value for void functions
@@ -284,7 +295,7 @@ class CompilationEngine:
                     f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
                 )
             name = self.tokenizer.current_token
-            self.SymbolTable.define(name, type_name, 'ARG')
+            self.symbolTable.define(name, type_name, 'ARG')
             self.advance()
 
             # additional varNames separated by commas
@@ -341,8 +352,11 @@ class CompilationEngine:
                 f"Expected varName (identifier) after 'let', got '{self.tokenizer.current_token}'"
             )
         var_name = self.tokenizer.current_token
-        kind = self.SymbolTable.kind_of(var_name)
-        index = self.SymbolTable.index_of(var_name)
+        kind = self.kinds[self.symbolTable.kind_of(var_name)]
+        index = self.symbolTable.index_of(var_name)
+
+        print(f"[DEBUG compile_let] var_name={var_name}, kind={kind}, index={index}")
+        print(f"[DEBUG compile_let] peek()={self.tokenizer.peek()}")
         self.advance()
         
         # Array assignment?
@@ -353,19 +367,21 @@ class CompilationEngine:
             # push base address
             self.vm_writer.write_push(kind, index) 
             self.compile_expression()       
-            self._expect( ']', 'compile_let')
+            self._expect(']', 'compile_let')
             self.vm_writer.write_arithmetic("ADD")
             self.vm_writer.write_pop("TEMP", 0)  # Store the address in TEMP 0
-
+        
         self._expect('=', 'compile_let')
         self.compile_expression()
         self._expect(';', 'compile_let')
 
+        print(f"[DEBUG compile_let] is_array={is_array}")
         if is_array:
             self.vm_writer.write_push("TEMP", 0)  # Retrieve the address from TEMP 0
             self.vm_writer.write_pop("POINTER", 1)  # THAT points to the target address
             self.vm_writer.write_pop("THAT", 0)  # Pop the value into THAT 0  
         else:
+            print(f"let kind: {kind}, index: {index}")
             self.vm_writer.write_pop(kind, index)  
 
 
@@ -472,7 +488,7 @@ class CompilationEngine:
 
     def compile_expression(self) -> None:
         """Compiles an expression."""
-        if self.tokenizer.current_token in (';', ")", '}'): 
+        if self.tokenizer.current_token in ( ';', ")", '}', ']'): 
             return
         
         self.compile_term()
@@ -500,6 +516,7 @@ class CompilationEngine:
                   | unaryOp term
         """
         name = self.tokenizer.current_token
+        print(f"[DEBUG compile_term] current_token={name}, token_type={self.tokenizer.token_type()}")
         
         # integer constant
         if self.tokenizer.token_type() == 'INT_CONST':
@@ -508,10 +525,15 @@ class CompilationEngine:
         
         # string constant
         elif self.tokenizer.token_type() == 'STRING_CONST':
-            str_len = len(name)
+            string_val = self.tokenizer.current_token 
+
+            if string_val.startswith('"') and string_val.endswith('"'):
+                string_val = string_val[1:-1]
+
+            str_len = len(string_val)
             self.vm_writer.write_push("CONST", str_len)
             self.vm_writer.write_call("String.new", 1)
-            for char in name:
+            for char in string_val:
                 self.vm_writer.write_push("CONST", ord(char))
                 self.vm_writer.write_call("String.appendChar", 2)
             self.advance()
@@ -555,17 +577,20 @@ class CompilationEngine:
         # identifier: variable, array access, or subroutine call 
         elif self.tokenizer.token_type() == "IDENTIFIER":
             next_tok = self.tokenizer.peek()
+            print(f"[DEBUG compile_term] peek={next_tok}")
             
             # array access
-            if next_tok == '[':   
+            if next_tok == '[':  
+                print(f"[DEBUG compile_term] array access on {name}") 
                 var_name = self.tokenizer.current_token
                 self.vm_writer.write_push(
-                        self.SymbolTable.kind_of(var_name), 
-                        self.SymbolTable.index_of(var_name)
+                        self.kinds[self.symbolTable.kind_of(var_name)], 
+                        self.symbolTable.index_of(var_name)
                     )                
+                self.advance()  # eat varName
                 self.advance()  # eat '['
                 self.compile_expression()       
-                self._expect( ']', 'compile_term')
+                self._expect(']', 'compile_term')
                 self.vm_writer.write_arithmetic("ADD")
                 self.vm_writer.write_pop("POINTER", 1)
                 self.vm_writer.write_push("THAT", 0)  
@@ -592,12 +617,12 @@ class CompilationEngine:
                 func_name = name + '.' + self.tokenizer.current_token
                 self.advance()
 
-                if self.SymbolTable.kind_of(name) is not None:
+                if self.symbolTable.kind_of(name) is not None:
                     # method call on an object
-                    self.vm_writer.write_push(self.SymbolTable.kind_of(name),
-                                            self.SymbolTable.index_of(name))
-                    self._expect( '(', 'compile_term')
-                    n_args = self.compile_expression_list() + 1  # +1 עבור 'this'
+                    self.vm_writer.write_push(self.kinds[self.symbolTable.kind_of(name)],
+                                            self.symbolTable.index_of(name))
+                    self._expect('(', 'compile_term')
+                    n_args = self.compile_expression_list() + 1 # include object as argument
                 else:
                     # class function call
                     self._expect('(', 'compile_term')
@@ -610,8 +635,8 @@ class CompilationEngine:
             else: 
                 var_name = self.tokenizer.current_token
                 self.vm_writer.write_push(
-                        self.SymbolTable.kind_of(var_name), 
-                        self.SymbolTable.index_of(var_name)
+                        self.kinds[self.symbolTable.kind_of(var_name)], 
+                        self.symbolTable.index_of(var_name)
                     )                
                 self.advance()
         else:

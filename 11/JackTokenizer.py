@@ -169,7 +169,7 @@ class JackTokenizer:
         
         for sentence in sentences_list:
             temp = token_pattern.findall(sentence)
-            self.tokens.extend(temp)
+            self.tokens.extend(word.strip() for word in temp if word.strip())
         
     def peek(self) -> Union[str,None]:
         """Return the next token without advancing the tokenizer."""
