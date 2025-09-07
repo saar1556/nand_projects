@@ -10,8 +10,6 @@ from JackTokenizer import JackTokenizer
 from VMWriter import VMWriter
 from SymbolTable import SymbolTable
 
-
-
 class CompilationEngine:
     """
     Parses a stream of Jack tokens and writes its
@@ -276,7 +274,6 @@ class CompilationEngine:
         self.vm_writer.write_pop("TEMP", 0)  # discard return
         self.eat(';')
 
-
     def compile_let(self) -> None:
         """let var = expr; | let arr[expr] = expr;"""
         self.eat('let')
@@ -312,7 +309,6 @@ class CompilationEngine:
 
         self.eat(';')
 
-
     def compile_while(self) -> None:
         """while (expr) { statements }"""
         idx = self.label_counter
@@ -333,7 +329,6 @@ class CompilationEngine:
 
         self.vm_writer.write_goto(f"WHILE_EXP{idx}")
         self.vm_writer.write_label(f"WHILE_END{idx}")
-
 
     def compile_return(self) -> None:
         """Compiles a return statement."""
@@ -372,7 +367,6 @@ class CompilationEngine:
             self.vm_writer.write_label(f"IF_END{idx}")
         else:
             self.vm_writer.write_label(f"IF_FALSE{idx}")
-
 
     def aritmetic_op(self, op: str) -> str:
         if op == '+':
@@ -413,7 +407,6 @@ class CompilationEngine:
             return 129   # Jack OS "backSpace"
         raise ValueError(f"Illegal character in Jack string literal: {repr(ch)}")
 
-
     def compile_expression(self) -> None:
         """term (op term)*"""
         self.compile_term()
@@ -423,8 +416,7 @@ class CompilationEngine:
             self.eat(op)
             self.compile_term()
             self.aritmetic_op(op)
-
-            
+         
     def compile_term(self) -> None:
         """
         Compiles a single term in a Jack expression.
@@ -485,11 +477,12 @@ class CompilationEngine:
             self.eat(')')
             return
 
-        elif tok in ('-', '~'):
+        elif tok in ('-', '~','^','#'):         # TODO: add shift ops
             op = tok
             self.eat(op)
             self.compile_term()
             self.vm_writer.write_arithmetic("NEG" if op == '-' else "NOT")
+
             return
 
         elif ttype == 'IDENTIFIER':
@@ -499,21 +492,21 @@ class CompilationEngine:
             # subroutine calls
             if nxt in ('(', '.'):
                 extra = 0
-                if nxt == '.':
+                if nxt == '.':  # name.sub(...)
                     self.eat(name)
                     self.eat('.')
                     sub = self.tokenizer.identifier()
                     self.eat(sub)
-                    if self.symbol_table.kind_of(name) is not None:
+                    if self.symbol_table.kind_of(name) is not None: # method of other object
                         seg = self.symbol_table.kind_of(name)
                         idx = self.symbol_table.index_of(name)
                         typ = self.symbol_table.type_of(name)
                         self.vm_writer.write_push(seg, idx)
                         callee = f"{typ}.{sub}"
                         extra = 1
-                    else:
+                    else:               # function of other object
                         callee = f"{name}.{sub}"
-                else:
+                else: # method
                     self.eat(name)
                     self.vm_writer.write_push("POINTER", 0)
                     callee = f"{self.current_class}.{name}"
@@ -548,7 +541,6 @@ class CompilationEngine:
 
         else:
             raise ValueError(f"Invalid term: {tok} ({ttype})")
-
 
     def compile_expression_list(self) -> None:
         """Compiles a (possibly empty) comma-separated list of expressions."""
