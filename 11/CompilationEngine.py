@@ -72,7 +72,6 @@ class CompilationEngine:
             "STRING_CONST" : self.tokenizer.string_val
         }
 
-        print(f"tokenizer: {self.tokenizer.tokens}\n\n")
 
     def advance(self) -> None:
         """Advances the tokenizer to the next token."""
@@ -116,7 +115,7 @@ class CompilationEngine:
             )
         self.className = self.tokenizer.current_token
         self.advance()
-        self._expect('{', 'compile_class')
+        self._expect( '{', 'compile_class')
         while self.tokenizer.current_token in {'static', 'field'}:
             self.compile_class_var_dec()
         while self.tokenizer.current_token in {'constructor', 'function', 'method'}:
@@ -154,7 +153,6 @@ class CompilationEngine:
                 f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
             )
         name = self.tokenizer.current_token
-        print(f"Defining var: name={name}, type={type_name}, kind={kind}")
         self.symbolTable.define(name, type_name, kind)
         self.advance()
 
@@ -354,9 +352,6 @@ class CompilationEngine:
         var_name = self.tokenizer.current_token
         kind = self.kinds[self.symbolTable.kind_of(var_name)]
         index = self.symbolTable.index_of(var_name)
-
-        print(f"[DEBUG compile_let] var_name={var_name}, kind={kind}, index={index}")
-        print(f"[DEBUG compile_let] peek()={self.tokenizer.peek()}")
         self.advance()
         
         # Array assignment?
@@ -375,13 +370,11 @@ class CompilationEngine:
         self.compile_expression()
         self._expect(';', 'compile_let')
 
-        print(f"[DEBUG compile_let] is_array={is_array}")
         if is_array:
             self.vm_writer.write_push("TEMP", 0)  # Retrieve the address from TEMP 0
             self.vm_writer.write_pop("POINTER", 1)  # THAT points to the target address
             self.vm_writer.write_pop("THAT", 0)  # Pop the value into THAT 0  
         else:
-            print(f"let kind: {kind}, index: {index}")
             self.vm_writer.write_pop(kind, index)  
 
 
@@ -516,7 +509,6 @@ class CompilationEngine:
                   | unaryOp term
         """
         name = self.tokenizer.current_token
-        print(f"[DEBUG compile_term] current_token={name}, token_type={self.tokenizer.token_type()}")
         
         # integer constant
         if self.tokenizer.token_type() == 'INT_CONST':
@@ -577,11 +569,9 @@ class CompilationEngine:
         # identifier: variable, array access, or subroutine call 
         elif self.tokenizer.token_type() == "IDENTIFIER":
             next_tok = self.tokenizer.peek()
-            print(f"[DEBUG compile_term] peek={next_tok}")
             
             # array access
             if next_tok == '[':  
-                print(f"[DEBUG compile_term] array access on {name}") 
                 var_name = self.tokenizer.current_token
                 self.vm_writer.write_push(
                         self.kinds[self.symbolTable.kind_of(var_name)], 
@@ -596,13 +586,14 @@ class CompilationEngine:
                 self.vm_writer.write_push("THAT", 0)  
 
             # method call on 'this' object
-            elif next_tok == '(':  
+            elif next_tok == '(': 
+                func_name = self.className + '.' + name 
                 self.advance()  # eat name
                 self._expect('(', 'compile_term')
                 self.vm_writer.write_push("POINTER", 0)  # push 'this'
                 n_args = self.compile_expression_list()
                 self._expect( ')', 'compile_term')
-                self.vm_writer.write_call(name, n_args+1) # include 'this' as an argument
+                self.vm_writer.write_call(func_name, n_args+1) # include 'this' as an argument
 
              # subroutine call with class or object
             elif next_tok == '.': 
@@ -614,17 +605,21 @@ class CompilationEngine:
                         f"Expected subroutineName (identifier) after '.', "
                         f"got '{self.tokenizer.current_token}'"
                     )
-                func_name = name + '.' + self.tokenizer.current_token
-                self.advance()
 
                 if self.symbolTable.kind_of(name) is not None:
                     # method call on an object
+                    kind = self.symbolTable.kind_of(name)
+                    func_name = self.symbolTable.kind_table[kind][name]["type"] + '.' + self.tokenizer.current_token
+                    self.advance()
+                    # push the object as the first argument
                     self.vm_writer.write_push(self.kinds[self.symbolTable.kind_of(name)],
                                             self.symbolTable.index_of(name))
                     self._expect('(', 'compile_term')
                     n_args = self.compile_expression_list() + 1 # include object as argument
                 else:
                     # class function call
+                    func_name = name + '.' + self.tokenizer.current_token
+                    self.advance()
                     self._expect('(', 'compile_term')
                     n_args = self.compile_expression_list()
                 self._expect( ')', 'compile_term')
