@@ -5,7 +5,7 @@ was written by Aviv Yaish. It is an extension to the specifications given
 as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
 Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
 """
-import typing
+'''import typing
 
 
 class SymbolTable:
@@ -118,10 +118,10 @@ class SymbolTable:
         elif name in self.classSymbolTable:
             return self.classSymbolTable[name]["index"]
         else:
-            return None
+            return None'''
 
 
-'''
+
 """
 This file is part of nand2tetris, as taught in The Hebrew University, and
 was written by Aviv Yaish. It is an extension to the specifications given
@@ -254,5 +254,5 @@ class SymbolTable:
         elif name in self.class_scope:
             return self.class_scope[name].index
         else:
-            return None'''
+            return None
 
