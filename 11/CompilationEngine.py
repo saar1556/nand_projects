@@ -45,15 +45,6 @@ class CompilationEngine:
         self.current_class = self.tokenizer.identifier()
         self.eat(self.current_class)
 
-        self.symbol_table.classSymbolTable = {}
-        self.symbol_table.subroutineSymbolTable = {}
-        self.symbol_table.kind_counters = {
-            'static': 0,
-            'field': 0,
-            'argument': 0,
-            'var': 0
-        }
-
         self.eat('{')
         self.compile_class_var_dec()
         while self.tokenizer.current_token in {'constructor', 'function', 'method'}:
