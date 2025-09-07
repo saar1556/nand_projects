@@ -123,7 +123,6 @@ class CompilationEngine:
         self._expect( '}', 'compile_class')
         
        
-
     def compile_var_declaration(self, kind: str) -> None:
         """
         Compile a variable declaration of a given kind (helper).
@@ -229,7 +228,7 @@ class CompilationEngine:
             raise ValueError(
                 f"Expected subroutineName (identifier), got '{self.tokenizer.current_token}'"
             )
-        subroutine_name  = f"{self.className}.{self.tokenizer.current_token}"
+        subroutine_name = f"{self.className}.{self.tokenizer.current_token}"
         self.advance()
 
         # Parse parameter list
@@ -321,6 +320,7 @@ class CompilationEngine:
             else:
                 self.compile_return()
 
+
     def compile_do(self) -> None:
         """
         Compile a 'do' statement.
@@ -332,6 +332,7 @@ class CompilationEngine:
         self.compile_term()
         self._expect(';', 'compile_do')
         self.vm_writer.write_pop("TEMP", 0)  # Discard return value
+
 
     def compile_let(self) -> None:
         """
@@ -609,7 +610,7 @@ class CompilationEngine:
                 if self.symbolTable.kind_of(name) is not None:
                     # method call on an object
                     kind = self.symbolTable.kind_of(name)
-                    func_name = self.symbolTable.kind_table[kind][name]["type"] + '.' + self.tokenizer.current_token
+                    func_name = self.symbolTable.kind_table[kind][name]["type"] + '.' + self.tokenizer.current_token  ###################
                     self.advance()
                     # push the object as the first argument
                     self.vm_writer.write_push(self.kinds[self.symbolTable.kind_of(name)],
