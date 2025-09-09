@@ -11,20 +11,33 @@
  * consists of 32,768 words, each holding a 16-bit binary number.
  */ 
 class Memory {
+
+    static Array ram; // RAM array
+    static Array heap; // heap array
+    static int heapBase; // base address of the heap
+    static int freeList; // head of the free list
+
     /** Initializes the class. */
     function void init() {
         // Pseudocode:
         // 1. freeList = heapBase
         // 2. freeList.length = heapLength
         // 3. freeList.next = null
+        let Memory.heap = 2048; 
+        let freeList = 2048;
+        let Memory.heap[0] = 0;
+        let Memory.heap[1] = 14335; // length
+        let ram = 0;
     }
 
     /** Returns the RAM value at the given address. */
     function int peek(int address) {
+        return Memory.ram[address];
     }
 
     /** Sets the RAM value at the given address to the given value. */
     function void poke(int address, int value) {
+        let Memory.ram[address] = value;
     }
 
     /** Finds an available RAM block of the given size and returns
