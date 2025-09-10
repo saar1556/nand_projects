@@ -41,10 +41,11 @@ class Math {
             let shiftedx = x;
             let i = 0;
             while (i < 16) {
-                if ((y & (1 << i)) != 0) {
+                if (~((y & Math.leftShift(1, i)) = 0)) {
                     let sum = sum + shiftedx;
                 }
-                let shiftedx = shiftedx << 1;
+                let shiftedx = ^shiftedx;
+                //Math.leftShift(shiftedx, 1);
                 let i = i + 1;
             }
             return sum;
@@ -57,42 +58,84 @@ class Math {
          * the Jack expressions x/y and divide(x,y) return the same value.
          */
         function int divide(int x, int y) {
-            var int q;
-            if (y > x) | (y < 0) {
-                let Math.remainder = x;
+            var int q, doubleY, sign, result;
+
+            // Set the sign of the result based on the signs of x and y.
+            let sign = 1;
+            if (x < 0) {
+                let x = -x;
+                let sign = -sign;
+            }
+            if (y < 0) {
+                let y = -y;
+                let sign = -sign;
+            }
+
+            // Base case for the recursion. If x < y, the quotient is 0.
+            if ((y > x) | (y = 0)) {
+                let remainder = x;
                 return 0;
             }
-            let q = divide(x, y + y);
-            if (Math.remainder < y) {
-                return q + q;
+
+            let doubleY = ^y;
+            //Math.leftShift(y, 1);
+            if (doubleY < 0) {
+                let remainder = x;
+                return 0; // ensure no overflow
             }
-            else {
-                let Math.remainder = Math.remainder - y;
-                return q + q + 1;
+            let q = Math.divide(x, doubleY);
+            let remainder = remainder - doubleY;
+            let result = q + q;
+            if (remainder > y - 1) {
+                let remainder = remainder - y;
+                let result = result + 1;
             }
+
+            // Apply the correct sign to the final result.
+            if (sign < 0) {
+                let result = -result;
+            }
+            return result;
         }
 
+        function int leftShift(int x, int n) {
+            var int i, result;
+            let i = 0;
+            let result = x;
+            while (i < n) {
+                let result = ^result;
+                let i = i + 1;
+            }
+            return result;
+        }
+        
+
         /** Returns the integer part of the square root of x. */
+        /**
+        y = 0;
+        for j = 14 .. 0 do:
+            if (y + 2**j)**2 <= x:
+                y = y + 2**j
+            return y
+
+
+            y**2 + 4y + 2**j**2
+        */
         function int sqrt(int x) {
-            // This should be implemented without using multiplication or division.
-            // Pseudocode (where '**' is the mathematical power function):
-            // 1. let y = 0
-            // 2. for j = (n/2 - 1) ... 0 do
-            // 3.   if ((y + 2**j)**2 <= x) then let y = y + 2**j
-            // 4. return y
-            // y**2 + 2*y*2**j + 2**(2*j)
-            var int y, ySquared, j, twoPowerJ, candidate;
+            var int y, ySquared, j, twoPowerJ, twoPower2J, candidate;
             let y = 0;
             let ySquared = 0;
-            let j = 15;
-            while (j >= 0) {
-                let twoPowerJ = 1 << j; // 2**j
-                let candidate = ySquared + (y << (j + 1)) + (1 << (j + j)); // y**2 + 2*y*2**j + 2**(2*j)
-                if (candidate <= x) & (candidate >= 0) {
+            let j = 8;
+            while (j > -1) {
+                let twoPowerJ = Math.leftShift(1, j); // 2**j
+                let twoPower2J = Math.leftShift(twoPowerJ, j); // 2**(2j)
+                // y**2 + y*(2**(j+1)) + 2**(2*j)
+                let candidate = ySquared + Math.leftShift(y, j + 1) + twoPower2J;
+                if (((candidate - 1) < x) & (candidate > 0)) {
                     let y = y + twoPowerJ;
                     let ySquared = candidate;
                 }
-                let j = j - 1;
+                let j = j - 1; 
             }
             return y;
         }
@@ -117,3 +160,4 @@ class Math {
             }
         }
 }
+  

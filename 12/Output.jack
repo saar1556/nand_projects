@@ -20,9 +20,13 @@ class Output {
 
     // Character map for displaying characters
     static Array charMaps; 
+    static int cursorRow, cursorCol;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        do Output.initMap();
+        do Output.moveCursor(0, 0);
+        return;
     }
 
     // Initializes the character map array
@@ -178,30 +182,96 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        let cursorRow = i;
+        let cursorCol = j;
+        do Output.clearCharAt(i, j);
+        return;
     }
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
         // Your implementation should be as efficient as possible.
-        // For example, you can draw multiple pixels at once, for each row.
+        // For example, you can draw multiple pixels at once, for each row
+        var Array map;
+        var int row, address;
+        let map = Output.getMap(c);
+        let row = 0;
+
+        while (row < 11) {
+            let address = 16384 + (cursorRow * 11 + row) * 32 + (cursorCol / 2);
+            do Memory.poke(address, map[row]);
+            let row = row + 1;
+    }
+
+    let cursorCol = cursorCol + 1;
+    if (cursorCol = 64) {
+        do Output.println();
+    }
+    return; 
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i;
+        let i = 0;
+        while (i < s.length()) {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        var String s;
+        do s.setInt(i);
+        do Output.printString(s);
+        do s.dispose();
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let cursorCol = 0;
+        let cursorRow = cursorRow + 1;
+        if (cursorRow = 23) {
+            let cursorRow = 0; // wrap around
+        }
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if (cursorCol > 0) {
+            let cursorCol = cursorCol - 1;
+        } 
+        else {
+            if (cursorRow > 0) {
+                let cursorCol = 63;  
+                let cursorRow = cursorRow - 1;
+            }
+            else {
+                return; 
+            }
+        }            
+        do Output.moveCursor(cursorRow, cursorCol);
+        do Output.printChar(" ");       
+        let cursorCol = cursorCol - 1;  
+        return;
+    }
+
+    // Helper function: clear a character at given row/col
+    function void clearCharAt(int row, int col) {
+        var int r;
+        let r = 0;
+        do Screen.setColor(0); // white
+        while (r < 11) {
+            do Screen.drawLine((row * 11) + r, col * 8);
+            let r = r + 1;
+        }
+        return;
     }
 }

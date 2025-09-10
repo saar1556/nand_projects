@@ -10,6 +10,7 @@
 class Keyboard {
         /** Initializes the keyboard. */
         function void init() {
+            return;
         } 
 
         /**
@@ -33,7 +34,7 @@ class Keyboard {
          * F1 - F12 = 141 - 152
          */
         function char keyPressed() {
-            // Uses Memory.peek
+            return Memory.peek(24576);
         }
 
         /**								
@@ -51,6 +52,12 @@ class Keyboard {
             // 5. display c at the current cursor location
             // 6. advance the cursor
             // 7. return c
+            var char c;
+            while (Keyboard.keyPressed() = 0) {}
+            let c = Keyboard.keyPressed();
+            while (~(Keyboard.keyPressed() = 0)) {}
+            do Output.printChar(c);
+            return c;
         }
 
         /**								
@@ -76,6 +83,27 @@ class Keyboard {
             // 10.     move the cursor accordingly
             // 11.  else
             // 12.    str.appendChar(c)
+            var String str;
+            var char c;
+            let str = String.new(64);
+            let str = "";
+            do Output.printString(message);
+            while (true) {
+                let c = Keyboard.readChar();
+                if (c = 128) { // newline
+                    return str;
+                }
+                if (c = 129) { // backspace
+                    if (input.length() > 0) {
+                        do input.eraseLastChar();
+                        do Output.backSpace();
+                    }
+                }
+                else {
+                    do str.appendChar(c);
+                }
+            }
+            return str;
         }     
 
         /**								
@@ -84,7 +112,28 @@ class Keyboard {
          * and returns its integer value (until the first non-digit character in the
          * entered text is detected). Also handles user backspaces. 
          */
-        function int readInt(String message) {
-            // This should behave exactly like the built-in OS.
+        function int readInt(String message) {   ////////////////
+            var String input;
+            var char c;
+            let input = String.new(64);
+            do Output.printString(message);
+            while (true) {
+                let c = Keyboard.readChar();
+                if (c = String.newLine()) {
+                    do Output.println();
+                    return input.intValue();
+                } 
+                if (c = String.backSpace()) {
+                    if (input.length() > 0) {
+                        do input.eraseLastChar();
+                        do Output.backSpace();
+                    }
+                } 
+                else {
+                    do input.appendChar(c);
+                    do Output.printChar(c);
+                }
+            }
+            return input.intValue();
         }
 }

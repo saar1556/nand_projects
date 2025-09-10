@@ -15,7 +15,7 @@ class Memory {
     static Array ram; // RAM array
     static Array heap; // heap array
     static int heapBase; // base address of the heap
-    static int freeList; // head of the free list
+    static Array freeList; // head of the free list
 
     /** Initializes the class. */
     function void init() {
@@ -23,11 +23,11 @@ class Memory {
         // 1. freeList = heapBase
         // 2. freeList.length = heapLength
         // 3. freeList.next = null
-        let Memory.heap = 2048; 
-        let freeList = 2048;
-        let Memory.heap[0] = 0;
-        let Memory.heap[1] = 14335; // length
-        let ram = 0;
+        let freeList = Array.new(3);
+        let freeList[0] = heapBase;
+        let freeList[1] = heapLength;
+        let freeList[2] = null;
+        
     }
 
     /** Returns the RAM value at the given address. */

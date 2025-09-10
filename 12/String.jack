@@ -26,7 +26,7 @@ class String {
 
     /** Disposes this string. */
     method void dispose() {
-        str.dispose();
+        do str.dispose();
         return;
     }
 
@@ -43,7 +43,7 @@ class String {
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
         let str[j] = c;
-        if (j >= length) {
+        if (j > length - 1) {
             let length = j + 1;
         }
         return;
@@ -72,7 +72,7 @@ class String {
         let i = 0;
         while (i < length) {
             let d = str.charAt(i) - 48; // '0' = 48
-            if (d < 0) | (d > 9) {
+            if ((d < 0) | (d > 9)) {
                 return val; // non-digit char
             }
             let val = (val * 10) + d;
@@ -87,14 +87,14 @@ class String {
         let lastDigit = val - ((val / 10)*10);
         let c = lastDigit + 48; // '0' = 48
         if (val < 10) {
-            do this.setCharAt(0, c);
+            do setCharAt(0, c);
             let length = 1;
             return;
         }
         else {
             let temp = val / 10;
-            do this.setInt(temp);
-            do this.appendChar(c);
+            do setInt(temp);
+            do appendChar(c);
             return;
         }
     }

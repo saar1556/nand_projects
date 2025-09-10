@@ -10,20 +10,20 @@
 class Sys {
     /** Performs all the initializations required by the OS. */
     function void init() {
-        Math.init();
-        String.init();
-        Array.init();
-        Memory.init();
-        Main.main();
-        Sys.halt();
+        do Array.init();
+        do Memory.init();
+        do Math.init();
+        do Screen.init();
+        do Keyboard.init();
+        do Output.init();
+        do Main.main();
+        do Sys.halt();
         return;
     }
 
     /** Halts program execution. */
     function void halt() {
-        while (true) {
-            let Memory.poke(0, 0); // prevents "empty" loop
-        }
+        while (true) { }
         return;
     }
 
@@ -45,7 +45,7 @@ class Sys {
         let errString = "ERR";
         let numString = String.setInt(errorCode);
         let i = 0;
-        while (i < numString.length) {
+        while (i < numString.length()) {
             let errString = errString.appendChar(numString.charAt(i));
             let i = i + 1;
         }
