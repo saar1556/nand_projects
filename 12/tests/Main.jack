@@ -1,0 +1,67 @@
+class Main {
+    function void main() {
+        var int input, expected, result;
+
+        // בדיקה 1: sqrt(32767) = 181
+        let input = 32767;
+        let expected = 181;
+        let result = Math.sqrt(input);
+        do Output.printString("sqrt(32767) = ");
+        do Output.printInt(result);
+        if (~(result = expected)) {
+            do Output.printString("  Error\n");
+        } else {
+            do Output.printString("   OK\n");
+        }
+
+        // בדיקה 2: sqrt(9) = 3
+        let input = 9;
+        let expected = 3;
+        let result = Math.sqrt(input);
+        do Output.printString("sqrt(9) = ");
+        do Output.printInt(result);
+        if (~(result = expected)) {
+            do Output.printString("  Error\n");
+        } else {
+            do Output.printString("   OK\n");
+        }
+
+        // בדיקה 3: sqrt(4) = 2
+        let input = 4;
+        let expected = 2;
+        let result = Math.sqrt(input);
+        do Output.printString("sqrt(4) = ");
+        do Output.printInt(result);
+        if (~(result = expected)) {
+            do Output.printString("  Error\n");
+        } else {
+            do Output.printString("  OK\n");
+        }
+
+        // בדיקה 4: sqrt(15) = 3
+        let input = 15;
+        let expected = 3;
+        let result = Math.sqrt(input);
+        do Output.printString("sqrt(15) = ");
+        do Output.printInt(result);
+        if (~(result = expected)) {
+            do Output.printString("   Error\n");
+        } else {
+            do Output.printString("  OK\n");
+        }
+
+        // בדיקה 5: sqrt(100) = 10
+        let input = 100;
+        let expected = 10;
+        let result = Math.sqrt(input);
+        do Output.printString("sqrt(100) = ");
+        do Output.printInt(result);
+        if (~(result = expected)) {
+            do Output.printString("  Error\n");
+        } else {
+            do Output.printString("  OK\n");
+        }
+
+        return;
+    }
+}

@@ -1,0 +1,162 @@
+// This file is part of nand2tetris, as taught in The Hebrew University, and
+// was written by Aviv Yaish. It is an extension to the specifications given
+// [here](https://www.nand2tetris.org) (Shimon Schocken and Noam Nisan, 2017),
+// as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
+// Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
+
+/**
+ * A library of commonly used mathematical functions.
+ * Note: Jack compilers implement multiplication and division using OS method calls.
+ */
+class Math {
+
+        static int remainder; // used by divide
+        
+        /** Initializes the library. */
+        function void init() {
+            let remainder = 0;
+            return;
+
+        }
+
+        /** Returns the absolute value of x. */
+        function int abs(int x) {
+            if (x < 0) {
+                return -x;
+            } 
+            else {
+                return x;
+            }
+        }
+
+        /** 
+         * Returns the product of x and y. 
+         * When a Jack compiler detects the multiplication operator '*' in the 
+         * program's code, it handles it by invoking this method. In other words,
+         * the Jack expressions x*y and multiply(x,y) return the same value.
+         */
+        function int multiply(int x, int y) {
+            var int sum, shiftedx, i;
+            let sum = 0;
+            let shiftedx = x;
+            let i = 0;
+            while (i < 16) {
+                if (~((y & Math.leftShift(1, i)) = 0)) {
+                    let sum = sum + shiftedx;
+                }
+                let shiftedx = ^shiftedx;
+                //Math.leftShift(shiftedx, 1);
+                let i = i + 1;
+            }
+            return sum;
+        }
+
+        /** 
+         * Returns the integer part of x/y.
+         * When a Jack compiler detects the multiplication operator '/' in the 
+         * program's code, it handles it by invoking this method. In other words,
+         * the Jack expressions x/y and divide(x,y) return the same value.
+         */
+        function int divide(int x, int y) {
+            var int q, doubleY, sign, result;
+
+            // Set the sign of the result based on the signs of x and y.
+            let sign = 1;
+            if (x < 0) {
+                let x = -x;
+                let sign = -sign;
+            }
+            if (y < 0) {
+                let y = -y;
+                let sign = -sign;
+            }
+
+            // Base case for the recursion. If x < y, the quotient is 0.
+            if ((y > x) | (y = 0)) {
+                let remainder = x;
+                return 0;
+            }
+
+            let doubleY = ^y;
+            //Math.leftShift(y, 1);
+            if (doubleY < 0) {
+                let remainder = x;
+                return 0; // ensure no overflow
+            }
+            let q = Math.divide(x, doubleY);
+            let remainder = remainder - doubleY;
+            let result = q + q;
+            if (remainder > y - 1) {
+                let remainder = remainder - y;
+                let result = result + 1;
+            }
+
+            // Apply the correct sign to the final result.
+            if (sign < 0) {
+                let result = -result;
+            }
+            return result;
+        }
+
+        function int leftShift(int x, int n) {
+            var int i, result;
+            let i = 0;
+            let result = x;
+            while (i < n) {
+                let result = ^result;
+                let i = i + 1;
+            }
+            return result;
+        }
+        
+
+        /** Returns the integer part of the square root of x. */
+        /**
+        y = 0;
+        for j = 14 .. 0 do:
+            if (y + 2**j)**2 <= x:
+                y = y + 2**j
+            return y
+
+
+            y**2 + 4y + 2**j**2
+        */
+        function int sqrt(int x) {
+            var int y, ySquared, j, twoPowerJ, twoPower2J, candidate;
+            let y = 0;
+            let ySquared = 0;
+            let j = 8;
+            while (j > -1) {
+                let twoPowerJ = Math.leftShift(1, j); // 2**j
+                let twoPower2J = Math.leftShift(twoPowerJ, j); // 2**(2j)
+                // y**2 + y*(2**(j+1)) + 2**(2*j)
+                let candidate = ySquared + Math.leftShift(y, j + 1) + twoPower2J;
+                if (((candidate - 1) < x) & (candidate > 0)) {
+                    let y = y + twoPowerJ;
+                    let ySquared = candidate;
+                }
+                let j = j - 1; 
+            }
+            return y;
+        }
+
+        /** Returns the greater number. */
+        function int max(int a, int b) {
+            if (a > b) {
+                return a;
+            } 
+            else {
+                return b;
+            }
+        }
+
+        /** Returns the smaller number. */
+        function int min(int a, int b) {
+            if (a < b) {
+                return a;
+            } 
+            else {
+                return b;
+            }
+        }
+}
