@@ -19,10 +19,14 @@
 class Output {
 
     // Character map for displaying characters
-    static Array charMaps; 
+    static Array charMaps,cursor; 
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let cursor = Array.new(2);
+        let cursor[0]=0;
+        let cursor[1]=0;
+        return;
     }
 
     // Initializes the character map array
@@ -178,6 +182,9 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        let cursor[0] = i / 8;
+        let cursor[1] = j / 11;
+        return;
     }
 
     /** Displays the given character at the cursor location,
@@ -185,23 +192,65 @@ class Output {
     function void printChar(char c) {
         // Your implementation should be as efficient as possible.
         // For example, you can draw multiple pixels at once, for each row.
+        var int i,address;
+        var Array map;
+        let map = charMaps[c];
+        let i = 0;
+        
+        while (i < 11) {
+            let address = (((cursor[1]*11) + i)*32)+((cursor[0] * 8)/16);
+            do Memory.poke(address ,map[i]);
+        }
+
+        if (cursor[0] < 64) { let cursor[0] = cursor[0]+1; }
+        else {do println();}
+        return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i, n;
+        if (s = null) { return; }   // guard
+
+        let n = s.length();
+        let i = 0;
+        while (i < n) {
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
     }
+
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
+    // 48 - 57
     function void printInt(int i) {
+        var int r,j;
+        
+        if (i = 0) {do printChar(48); return;}
+
+        while (~(i = 0)) {
+            let j = (i/10);
+            let r = i - (j*10);
+            do printChar(r + 48);
+            let i=j;
+        }
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let cursor[0] = 0; 
+        let cursor[1] = cursor[1] + 1;
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if ( 0 < cursor[0] ) { let cursor[0] = cursor[0]-1; }
+        else {let cursor[0] = 63; let cursor[1] = cursor[1] - 1;}
+        return;
     }
 }

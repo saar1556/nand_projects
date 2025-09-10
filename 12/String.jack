@@ -14,31 +14,48 @@
 class String {
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
+    field Array str;
+    field int length;
+
     constructor String new(int maxLength) {
+        let str = Array.new(maxLength);
+        let length = 0;
+        return this;
     }
 
     /** Disposes this string. */
     method void dispose() {
+        do str.dispose();
+        return;
     }
 
     /** Returns the current length of this string. */
     method int length() {
+        return length;
     }
 
     /** Returns the character at the j-th location of this string. */
     method char charAt(int j) {
+        return str[j];
     }
 
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
+        let str[j] = c;
+        return;
     }
 
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
+        let str[length] = c;
+        let length = length + 1;
+        return this;
     }
 
     /** Erases the last character from this string. */
     method void eraseLastChar() {
+        if (length > 0) {let length = length - 1;}
+        return;
     }
 
     /** Returns the integer value of this string, 
@@ -50,6 +67,24 @@ class String {
         // 3.   let d = integer value of str.charAt(i)
         // 4.   let val = (val*10) + d
         // 5. return val
+
+        var int len,tenToTheI,num,d;
+
+        let len = this.length();
+        let tenToTheI = 1;
+        let num = 0;
+        let d = 0;
+
+        while (len > 0) {
+            let d = s.charAt(len-1) - 48;
+            let num = num+(tenToTheI * d);
+            let tenToTheI = tenToTheI*10;
+            let len = len-1;
+
+        }
+
+        return num;
+
     }
 
     /** Sets this string to hold a representation of the given value. */
@@ -61,17 +96,29 @@ class String {
         // 4.   return c (as a string)
         // 5. else
         // 6.   return int2String(val / 10).appendChar(c)
+    
+        var int r;
+        var char c;
+
+        let r = val-((val/10)*10);
+        let c = 48 + r;
+
+        if (val < 10) { return c; }
+        else {do this.setInt(val / 10); return this.appendChar(c);}
     }
 
     /** Returns the new line character. */
     function char newLine() {
+        return 128;
     }
 
     /** Returns the backspace character. */
     function char backSpace() {
+        return 129;
     }
 
     /** Returns the double quote (") character. */
     function char doubleQuote() {
+        return 34;
     }
 }

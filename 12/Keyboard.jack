@@ -34,6 +34,7 @@ class Keyboard {
          */
         function char keyPressed() {
             // Uses Memory.peek
+            return Memory.peek(24576);
         }
 
         /**								
@@ -51,6 +52,14 @@ class Keyboard {
             // 5. display c at the current cursor location
             // 6. advance the cursor
             // 7. return c
+
+            do printChar(95); // draw underscore
+            while (keyPressed() = 0) {}
+            let c = keyPressed();
+            while (~(keyPressed() = 0)) {}
+            do printChar(c);
+            return c;
+
         }
 
         /**								
@@ -76,6 +85,25 @@ class Keyboard {
             // 10.     move the cursor accordingly
             // 11.  else
             // 12.    str.appendChar(c)
+            var String s;
+            var char c;
+            let str = "";
+
+            do printString(message);
+            while (true) {
+                let c = readChar();
+                if (c = 128) {
+                    do println();
+                    return str;
+                }
+
+                if (c = 129) {
+                    do s.eraseLastChar();
+                    do Output.backSpace();
+                }
+                do str.appendChar(c);
+            }
+            return;
         }     
 
         /**								
@@ -86,5 +114,41 @@ class Keyboard {
          */
         function int readInt(String message) {
             // This should behave exactly like the built-in OS.
+            var char c;
+            var String s;
+            var int num;
+
+            let s = ""; 
+
+            do printString(message);
+            
+            let c = readChar();
+            while(true) {
+                let c = readChar();
+                if (c = 128) {
+                    if (~(s = ""))
+                        {
+                            do println();
+                            let num = s.intValue();
+                            do s.dispose();
+                            return num;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                }
+
+                if (c = 129) {
+                    do s.eraseLastChar();
+                    do Output.backSpace();
+                }
+
+                if ((c > 47) & (c < 58)) {
+                    do str.appendChar(c);
+                }
+            }
+
+            
         }
 }

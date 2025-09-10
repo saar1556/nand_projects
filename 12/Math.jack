@@ -9,13 +9,80 @@
  * Note: Jack compilers implement multiplication and division using OS method calls.
  */
 class Math {
+
+        static Array twoToThe;
+        static int divHelper;
+
         /** Initializes the library. */
         function void init() {
+        var int i,len;
+
+        let len=16;
+        let twoToThe = Array.new(len);
+        let i=0;
+
+        while (i < len) 
+            {
+                if (i = 0) {
+                    let twoToThe[i] = 1;
+                }
+                else
+                {
+                    let twoToThe[i] = twoToThe[i-1] + twoToThe[i-1];
+                }
+                let i=i+1;
+            }
         }
 
         /** Returns the absolute value of x. */
         function int abs(int x) {
+            if (x > 0) { 
+            return x;
+            }
+            return -x;
         }
+
+        method Array decimalToBin(int x) {
+            var int i;
+            var Array bits;
+
+            let bits = Array.new(16);
+            let i = 15;
+
+            while (i > -1) {
+                if (x > twoToThe[i])
+                    {
+                        let bits[i] = true;
+                        let x = x - twoToThe[i];
+                    }
+                else
+                {
+                    let bits[i] = false;
+                }
+                let i = i-1;
+            }
+
+            return bits;
+        }
+
+        method int binToDecimal(Array bits) {
+            var int i,new_val,twoToTheI;
+            
+            let i=0;
+            let new_val = 0;
+            let twoToTheI = 1;
+
+            while (i<16) {
+                if (bits[i]) {
+                    let new_val = twoToTheI + new_val;
+                }
+                let twoToTheI = twoToTheI*2;
+                let i = i+1;
+            }
+
+            return new_val;
+        }
+
 
         /** 
          * Returns the product of x and y. 
@@ -32,6 +99,33 @@ class Math {
             // 5.      let sum = sum + shiftedx
             // 6.   let shiftedx = 2*shiftedx
             // 7. return sum
+            var int sign, ax, i, sum, shiftedX;
+            var Array bits;
+
+            // 1) record the resulting sign (xor)
+            let sign = 0;
+            if (x < 0) { let sign = 1; let x = Math.abs(x);         }  
+            if (y < 0) { let sign = 1 - sign ; let y = Math.abs(y); } 
+            
+            let bits = decimalToBin(y);
+
+            // 2) nonnegative multiply using powers of two
+            let sum = 0;
+            let shiftedX = x;         // == ax * 2^0
+            let i = 0;
+            while (i < 16) {
+                if (bits[i]) {
+                    let sum = sum + shiftedX;
+                }
+                let shiftedX = shiftedX + shiftedX;
+                let i = i+1;
+             }
+
+            do Memory.deAlloc(bits);
+
+            // 3) restore the sign
+            if (sign = 1) { return 0 - sum; }
+            return sum;
         }
 
         /** 
@@ -40,7 +134,23 @@ class Math {
          * program's code, it handles it by invoking this method. In other words,
          * the Jack expressions x/y and divide(x,y) return the same value.
          */
+
         function int divide(int x, int y) {
+            var int res,sign;
+            
+            if (x < 0) { let sign = 1; let x = Math.abs(x);         }  
+            if (y < 0) { let sign = 1 - sign ; let y = Math.abs(y); } 
+
+            let divHelper = 0;
+            let res = Math.divideHelper(x,y);
+            let divHelper = 0;
+
+            if (sign = 1) { return - res; }
+            return res;
+        }
+        
+
+        function int divideHelper(int x, int y) {
             // This should be implemented without using multiplication.
             // Hint: updating the value of 2*q*y in the "if" statement requires
             // at most a single addition operator at every recursion step.
@@ -51,6 +161,24 @@ class Math {
             // 4.   return 2*q
             // 5. else
             // 6.   return 2*q + 1
+            var int q,mult;
+            if (y>x) {return 0;}
+
+            let q = divideHelper(x,y+y);
+
+            if (q=0) {let divHelper = 0;  }
+            if (q=1) {let divHelper = y+y;} // 2*1*y
+
+            if ((x-(divHelper))< y) {
+                return (q+q); // in the returned state, we will need to evaluate 2*qtag*ytag = 2*(2*q)(y/2) = 2*q*y
+                              // meaning temp in the current iteration, is the same in the returend state
+            }
+            else
+            {
+                let divHelper = divHelper + (y+y); // in the returned state, we will need to evaluate  2*qtag*ytag = 2*(2*q + 1)(y/2) = 2*q*y + y
+                return (q+q+1);                    // meaning temp in the current iteration, is less by 2ytag=y then the returend state
+            }
+
         }
 
         /** Returns the integer part of the square root of x. */
@@ -61,13 +189,33 @@ class Math {
             // 2. for j = (n/2 - 1) ... 0 do
             // 3.   if ((y + 2**j)**2 <= x) then let y = y + 2**j
             // 4. return y
+
+            var int y,i;
+            let y=0;
+            let i=(divide(x/2)-1);
+
+            while (i > -1) {
+                if (multiplication((y + twoToThe[i]),(y + twoToThe[i])) < x+1) {
+                    let y = y + twoToThe[i];
+                }
+                let i = i-1;
+            }
+            return y;
+            
         }
 
         /** Returns the greater number. */
         function int max(int a, int b) {
+            if (a-b>0) {
+                return a;
+            }
+
+            return b;
         }
 
         /** Returns the smaller number. */
         function int min(int a, int b) {
+            if (max(a,b) = a) { return b;}
+            return a;
         }
 }

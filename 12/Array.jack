@@ -13,10 +13,16 @@
  */
 class Array {
     /** Constructs a new Array of the given size. */
+    field int address;
+
     function Array new(int size) {
+        let address = Memory.alloc(size);
+        return this;
     }
 
     /** Disposes this array. */
     method void dispose() {
+        do Memory.deAlloc(address);
+        return;
     }
 }
