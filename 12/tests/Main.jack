@@ -2,11 +2,11 @@ class Main {
     function void main() {
         var int input, expected, result;
 
-        // בדיקה 1: sqrt(32767) = 181
-        let input = 32767;
-        let expected = 181;
-        let result = Math.sqrt(input);
-        do Output.printString("sqrt(32767) = ");
+        // בדיקה 1:  (-18000) / 6;
+        let input = -18000;
+        let expected = -3000;
+        let result = (-18000 / 6);
+        do Output.printString("-18000/ 6 = ");
         do Output.printInt(result);
         if (~(result = expected)) {
             do Output.printString("  Error\n");
