@@ -53,7 +53,7 @@ class Screen {
             var int i;
             let i = 0;
             while (i < shiftAmount) {
-                let value =  #value;
+                let value = #value;
                 let i = i + 1;
             }
             return value;
@@ -64,16 +64,16 @@ class Screen {
             var int y32, xDev16, address, addressVal, xMod16;
             let xDev16 = Screen.shiftRight(x, 4);
             let y32 = Screen.shiftLeft(y, 5);
-            let address = xDev16 + y32 + 16384;
+            let address = (xDev16 + y32 + 16384);
             let addressVal = Memory.peek(address);
             let xMod16 = x & 15;
             // set the specific pixel to 1
             if (color) {
-                let addressVal = addressVal | Screen.shiftLeft(1, xMod16);
+                let addressVal = (addressVal | Screen.shiftLeft(1, xMod16));
             }
             // set the specific pixel to 0
             else {
-                let addressVal = addressVal & ~(Screen.shiftLeft(1, xMod16));
+                let addressVal = (addressVal & (~(Screen.shiftLeft(1, xMod16))));
             }
             do Memory.poke(address, addressVal);
             return;
@@ -91,7 +91,7 @@ class Screen {
             let dy = Math.abs(y1 - y2);
             
             // Case: horizontal line
-            if (dy = 0 ) {
+            if (dy = 0) {
                  // Compute word indices
                 let wordStart = Screen.shiftRight(x1, 4); // x1 / 16
                 let wordEnd = Screen.shiftRight(x2, 4);   // x2 / 16
@@ -99,7 +99,7 @@ class Screen {
                 // Same word — draw pixel by pixel
                 if (wordStart = wordEnd) {
                     let i = x1;
-                    while (i < x2 + 1) {
+                    while (i < (x2 + 1)) {
                         do Screen.drawPixel(i, y1);
                         let i = i + 1;
                     }
@@ -114,7 +114,7 @@ class Screen {
                 // Full words — draw entire 16-bit values
                 let i = wordStart + 1;
                 while (i < wordEnd) {
-                    let address = 16384 + Screen.shiftLeft(y1, 5) + i;
+                    let address = (16384 + Screen.shiftLeft(y1, 5) + i);
                     if (color) {
                         do Memory.poke(address, -1); // 0xFFFF
                     } else {
@@ -124,18 +124,17 @@ class Screen {
                 }
                 // Last partial word
                 let i = Screen.shiftLeft(wordEnd, 4);
-                while (i < x2 + 1) {
+                while (i < (x2 + 1)) {
                     do Screen.drawPixel(i, y1);
                     let i = i + 1;
                 }
                 return;
             }
 
-
             // Case: vertical line
             if (dx = 0) {
                 let i = y1;
-                while (i < y2 + 1) {
+                while (i < (y2 + 1)) {
                     do Screen.drawPixel(x1, i);
                     let i = i + 1;
                 }
@@ -143,8 +142,8 @@ class Screen {
             }
 
             // General case: diagonal or sloped line
-            while ((a < dx + 1) & (b < dy + 1)) {
-                do Screen.drawPixel(x + a, y + b);
+            while ((a < (dx + 1)) & (b < (dy + 1))) {
+                do Screen.drawPixel((x + a), (y + b));
                 if (diff < 0) {
                     let a = a + 1;
                     let diff = diff + dy;
@@ -168,7 +167,7 @@ class Screen {
                 let add = -1;
             }
             let i = y1;
-            while (~(i = y2 + add)) {
+            while (~(i = (y2 + add))) {
                 do Screen.drawLine(x1, i, x2, i);
                 let i = i + add;
             }
@@ -179,14 +178,19 @@ class Screen {
         function void drawCircle(int x, int y, int r) {
 
             var int dy, halfWidth;
-            if (r > 181){
+            if (r > 181) {
                 let r = 181;
             }
             let dy = -r;
-            while (dy < r + 1) {
+            while (dy < (r + 1)) {
                 let halfWidth = Math.sqrt((r*r) - (dy*dy));
-                do Screen.drawLine(x-halfWidth, y+dy, x+halfWidth, y+dy);
-                let dy = dy + 1;
+                //do Output.printInt(x-halfWidth);
+                //do Output.printString(",  ");
+                //do Output.printInt(x+halfWidth);
+                //do Output.println();
+                do Screen.drawLine((x-halfWidth), (y+dy), (x+halfWidth), (y+dy));
+                //do Sys.wait(100);
+                let dy = (dy + 1);
             }
             return;
         }
