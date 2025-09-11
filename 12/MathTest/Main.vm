@@ -92,9 +92,9 @@ pop that 0
 push constant 7
 push local 0
 add
-push constant 6000
+push constant 32766
+push constant 32767
 neg
-push constant 6
 call Math.divide 2
 pop temp 0
 pop pointer 1

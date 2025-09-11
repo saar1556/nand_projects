@@ -227,7 +227,6 @@ class Output {
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
         var String s;
-        let s = String.new(10);
         do s.setInt(i);
         do Output.printString(s);
         do s.dispose();

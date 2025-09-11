@@ -1,0 +1,194 @@
+// This file is part of nand2tetris, as taught in The Hebrew University, and
+// was written by Aviv Yaish. It is an extension to the specifications given
+// [here](https://www.nand2tetris.org) (Shimon Schocken and Noam Nisan, 2017),
+// as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
+// Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
+
+/**
+ * A library of functions for displaying graphics on the screen.
+ * The Hack physical screen consists of 256 rows (indexed 0..255, top to bottom)
+ * of 512 pixels each (indexed 0..511, left to right). The top left pixel on 
+ * the screen is indexed (0,0).
+ */
+class Screen {
+
+        static boolean color;
+
+        /** Initializes the Screen. */
+        function void init() {
+            do Screen.clearScreen();
+            let color = true;
+            return;
+        }
+
+        /** Erases the entire screen. */
+        function void clearScreen() {
+            var int i;
+            let i = 0;
+            while (i < 8192) { // 256 rows * 512 bits / 16 = 8192 words
+                do Memory.poke(16384 + i, 0); // clear all words
+                let i = i + 1;
+            }
+            return;
+        }
+
+        /** Sets the current color, to be used for all subsequent drawXXX commands.
+         *    Black is represented by true, white by false. */
+        function void setColor(boolean b) {
+            let color = b;
+            return;
+        }
+
+        function int shiftLeft(int value, int shiftAmount) {
+            var int i;
+            let i = 0;
+            while (i < shiftAmount) {
+                let value =  ^value;
+                let i = i + 1;
+            }
+            return value;
+        }
+
+        function int shiftRight(int value, int shiftAmount) {
+            var int i;
+            let i = 0;
+            while (i < shiftAmount) {
+                let value =  #value;
+                let i = i + 1;
+            }
+            return value;
+        }
+
+        /** Draws the (x,y) pixel, using the current color. */
+        function void drawPixel(int x, int y) {
+            var int y32, xDev16, address, addressVal, xMod16;
+            let xDev16 = Screen.shiftRight(x, 4);
+            let y32 = Screen.shiftLeft(y, 5);
+            let address = xDev16 + y32 + 16384;
+            let addressVal = Memory.peek(address);
+            let xMod16 = x & 15;
+            // set the specific pixel to 1
+            if (color) {
+                let addressVal = addressVal | Screen.shiftLeft(1, xMod16);
+            }
+            // set the specific pixel to 0
+            else {
+                let addressVal = addressVal & ~(Screen.shiftLeft(1, xMod16));
+            }
+            do Memory.poke(address, addressVal);
+            return;
+        }
+
+        /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
+        function void drawLine(int x1, int y1, int x2, int y2) {
+
+            var int x, y, a, b, diff, dx, dy, wordStart, wordEnd, i, address;
+            let x = x1;
+            let y = y1;
+            let a = 0;
+            let diff = 0;
+            let dx = Math.abs(x1 - x2);
+            let dy = Math.abs(y1 - y2);
+            
+            // Case: horizontal line
+            if (dy = 0 ) {
+                 // Compute word indices
+                let wordStart = Screen.shiftRight(x1, 4); // x1 / 16
+                let wordEnd = Screen.shiftRight(x2, 4);   // x2 / 16
+
+                // Same word — draw pixel by pixel
+                if (wordStart = wordEnd) {
+                    let i = x1;
+                    while (i < x2 + 1) {
+                        do Screen.drawPixel(i, y1);
+                        let i = i + 1;
+                    }
+                return;
+                }
+                // First partial word
+                let i = x1;
+                while (i < Screen.shiftLeft(wordStart + 1, 4)) {
+                    do Screen.drawPixel(i, y1);
+                    let i = i + 1;
+                }
+                // Full words — draw entire 16-bit values
+                let i = wordStart + 1;
+                while (i < wordEnd) {
+                    let address = 16384 + Screen.shiftLeft(y1, 5) + i;
+                    if (color) {
+                        do Memory.poke(address, -1); // 0xFFFF
+                    } else {
+                        do Memory.poke(address, 0); // 0x0000
+                    }
+                    let i = i + 1;
+                }
+                // Last partial word
+                let i = Screen.shiftLeft(wordEnd, 4);
+                while (i < x2 + 1) {
+                    do Screen.drawPixel(i, y1);
+                    let i = i + 1;
+                }
+                return;
+            }
+
+
+            // Case: vertical line
+            if (dx = 0) {
+                let i = y1;
+                while (i < y2 + 1) {
+                    do Screen.drawPixel(x1, i);
+                    let i = i + 1;
+                }
+                return;
+            }
+
+            // General case: diagonal or sloped line
+            while ((a < dx + 1) & (b < dy + 1)) {
+                do Screen.drawPixel(x + a, y + b);
+                if (diff < 0) {
+                    let a = a + 1;
+                    let diff = diff + dy;
+                }
+                else {
+                    let b = b + 1;
+                    let diff = diff - dx;
+                }
+            }
+            return;
+        }
+
+        /** Draws a filled rectangle whose top left corner is (x1, y1)
+         * and bottom right corner is (x2,y2), using the current color. */
+        function void drawRectangle(int x1, int y1, int x2, int y2) {
+            var int i, add;
+            if (y1 < y2){
+                let add = 1;
+            }
+            else {
+                let add = -1;
+            }
+            let i = y1;
+            while (~(i = y2 + add)) {
+                do Screen.drawLine(x1, i, x2, i);
+                let i = i + add;
+            }
+            return;
+        }
+
+        /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
+        function void drawCircle(int x, int y, int r) {
+
+            var int dy, halfWidth;
+            if (r > 181){
+                let r = 181;
+            }
+            let dy = -r;
+            while (dy < r + 1) {
+                let halfWidth = Math.sqrt((r*r) - (dy*dy));
+                do Screen.drawLine(x-halfWidth, y+dy, x+halfWidth, y+dy);
+                let dy = dy + 1;
+            }
+            return;
+        }
+        
+}

@@ -1,0 +1,22 @@
+class Main {
+
+    function void main() {
+        var String s;
+        do Output.printString("Main.main started\n");
+        do Output.printString("Creating string...\n");
+
+        let s = String.new(64);
+        do s.setCharAt(0, 1); // 'A'
+        do Output.printString("OK/n");
+        do s.setCharAt(1, 2); // 'B'
+        do Output.printString("OK/n");
+        do s.setCharAt(2, 3); // 'C'
+        do Output.printString("String created\n");
+
+        do Output.printString(s);
+        do s.dispose();
+
+        do Output.printString("\nMain.main finished\n");
+        return;
+    }
+}

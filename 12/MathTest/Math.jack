@@ -86,32 +86,35 @@ class Math {
             // 5. else
             // 6.   return 2*q + 1
             var int q, mult;
-            if ((y > x) | (y > 16383)) {  
+            
+            if ((y > x) | (y < 0)) {  
                 return 0;
             }
 
             let q = Math.divideHelper(x,y+y);
 
-            //if (q=0) {let divHelper = 0; }
-            if (q=1) {
-                let divHelper = y + y;
-            } // 2*1*y
+            // base case:
+            //if (q = 0) {let divHelper = 0; }
+            //if (q = 1) { let divHelper = y + y;} // 2*1*y
 
+            // recursion case:
             if ((x - divHelper) < y) {
                 return (q+q); // in the returned state, we will need to evaluate 2*qtag*ytag = 2*(2*q)(y/2) = 2*q*y
                               // meaning temp in the current iteration, is the same in the returend state
             }
             else
             {   
-                if ((divHelper + y + y) < 0) {
+                // overflow protect
+                if ((divHelper + y) < 0) {
                     return (0);
                 }
-                let divHelper = divHelper + (y+y);// in the returned state, we will need to evaluate  2*qtag*ytag = 2*(2*q + 1)(y/2) = 2*q*y + y
-                return (q+q);                    // meaning temp in the current iteration, is less by 2ytag=y then the returend state
+                let divHelper = divHelper + y;//(y+y);// in the returned state, we will need to evaluate  2*qtag*ytag = 2*(2*q + 1)(y/2) = 2*q*y + y
+                return (q+q+1);                    // meaning temp in the current iteration, is less by 2ytag=y then the returend state
             }
 
         }
 
+        
         function int leftShift(int x, int n) {
             var int i, result;
             let i = 0;
