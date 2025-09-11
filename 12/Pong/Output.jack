@@ -77,7 +77,7 @@ class Output {
         do Output.create(64,30,51,51,59,59,59,27,3,30,0,0);  // @
         do Output.create(63,30,51,51,24,12,12,0,12,12,0,0);  // ?
 
-        do Output.create(65,0,0,0,0,0,0,0,0,0,0,0);          // A ** TO BE FILLED **
+        do Output.create(65,12,30,51,51,63,51,51,51,51,0,0); // A
         do Output.create(66,31,51,51,51,31,51,51,51,31,0,0); // B
         do Output.create(67,28,54,35,3,3,3,35,54,28,0,0);    // C
         do Output.create(68,15,27,51,51,51,51,51,27,15,0,0); // D
@@ -149,24 +149,24 @@ class Output {
     // Creates the character map array of the given character index, using the given values.
     function void create(int index, int a, int b, int c, int d, int e,
                          int f, int g, int h, int i, int j, int k) {
-	var Array map;
+        var Array map;
 
-	let map = Array.new(11);
-        let charMaps[index] = map;
+        let map = Array.new(11);
+            let charMaps[index] = map;
 
-        let map[0] = a;
-        let map[1] = b;
-        let map[2] = c;
-        let map[3] = d;
-        let map[4] = e;
-        let map[5] = f;
-        let map[6] = g;
-        let map[7] = h;
-        let map[8] = i;
-        let map[9] = j;
-        let map[10] = k;
+            let map[0] = a;
+            let map[1] = b;
+            let map[2] = c;
+            let map[3] = d;
+            let map[4] = e;
+            let map[5] = f;
+            let map[6] = g;
+            let map[7] = h;
+            let map[8] = i;
+            let map[9] = j;
+            let map[10] = k;
 
-        return;
+            return;
     }
     
     // Returns the character map (array of size 11) of the given character.
@@ -184,9 +184,24 @@ class Output {
     function void moveCursor(int i, int j) {
         let cursorRow = i;
         let cursorCol = j;
+
+        if (i > 22 | j > 63) { return; }
+
         do Output.clearCharAt(i, j);
         return;
     }
+
+    
+    function int shiftLeft(int value, int shiftAmount) {
+            var int i;
+            let i = 0;
+            while (i < shiftAmount) {
+                let value =  ^value;
+                let i = i + 1;
+            }
+            return value;
+        }
+
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
@@ -194,21 +209,38 @@ class Output {
         // Your implementation should be as efficient as possible.
         // For example, you can draw multiple pixels at once, for each row
         var Array map;
-        var int row, address;
+        var int row, address, shift_row,base_addr,value1,value2;
+
         let map = Output.getMap(c);
         let row = 0;
+        let shift_row = 0;
+        
+        let base_addr = 16384 + (cursorRow * 352) + (cursorCol / 2); // 16384 + ((currentRow*11) + row)*32)+((currentCol * 8)/16
+                                                                     // same as 16384 + 352*currentRow + 32*row + currentCol/2
+                                                                    // same as base_addr + shift_row; shift_row += 32;
+        while (row < 11) {                                           
 
-        while (row < 11) {
-            let address = 16384 + (cursorRow * 11 + row) * 32 + (cursorCol / 2);
-            do Memory.poke(address, map[row]);
-            let row = row + 1;
-    }
+                let address = base_addr + shift_row;
+                if ((cursorCol & 1) = 1) {
+                    let value1 = Memory.peek(address);
+                    let value2 = Output.shiftLeft(map[row],8);
+                    do Memory.poke(address, (value1+value2));  
+                    
+                }
+                else { 
+                    do Memory.poke(address, map[row]);      
+                }
+                                                                         
+                let shift_row = shift_row + 32;         
+                let row = row + 1;
+        }
 
-    let cursorCol = cursorCol + 1;
-    if (cursorCol = 64) {
-        do Output.println();
-    }
-    return; 
+        let cursorCol = cursorCol + 1;
+
+        if (cursorCol = 64) {
+            do Output.println();
+        }
+        return; 
     }
 
     /** displays the given string starting at the cursor location,
@@ -216,6 +248,9 @@ class Output {
     function void printString(String s) {
         var int i;
         let i = 0;
+
+        if (s = null) { return; }
+
         while (i < s.length()) {
             do Output.printChar(s.charAt(i));
             let i = i + 1;
@@ -238,8 +273,8 @@ class Output {
     function void println() {
         let cursorCol = 0;
         let cursorRow = cursorRow + 1;
-        if (cursorRow = 23) {
-            let cursorRow = 0; // wrap around
+        if (cursorRow = 23) {  // wrap around
+            let cursorRow = 0;
         }
         return;
     }
@@ -264,15 +299,24 @@ class Output {
         return;
     }
 
-    // Helper function: clear a character at given row/col
+    // Clears an 8x11 cell aligned to the character grid
     function void clearCharAt(int row, int col) {
-        var int r;
-        let r = 0;
-        do Screen.setColor(0); // white
-        while (r < 11) {
-            do Screen.drawLine((row * 11) + r, col * 8, (row * 11) + r, (col * 8) + 7);
-            let r = r + 1;
+        var int x, y, x2, y2;
+
+        // grid limits: 64 cols (512/8), 23 rows (256/11 truncated)
+        if ((row < 0) | (row > 22) | (col < 0) | (col > 63)) {
+            return;
         }
+
+        let x  = col * 8;     // horizontal 0..504
+        let y  = row * 11;    // vertical   0..245
+        let x2 = x + 7;
+        let y2 = y + 10;
+
+        do Screen.setColor(false); // white
+        do Screen.drawRectangle(x, y, x2, y2);
+        do Screen.setColor(true); // white
         return;
     }
+
 }
