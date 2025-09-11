@@ -102,8 +102,7 @@ class Math {
                 return (q+q); // in the returned state, we will need to evaluate 2*qtag*ytag = 2*(2*q)(y/2) = 2*q*y
                               // meaning temp in the current iteration, is the same in the returend state
             }
-            else
-            {   
+            else {   
                 // overflow protect
                 if ((divHelper + y) < 0) {
                     return (0);

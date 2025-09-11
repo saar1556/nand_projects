@@ -18,3 +18,58 @@ class Main {
         return;
     }
 }
+
+//class Main {
+
+    /**function void main() {
+        // אתחול המסך
+        do Screen.init();
+
+        // ציור פיקסלים שחורים
+        do Screen.setColor(true); // שחור
+        do Sys.wait(100);
+        do Screen.drawPixel(60, 100);
+        do Screen.drawPixel(61, 100);
+        do Screen.drawPixel(62, 100);
+        do Sys.wait(100);
+
+        // ציור קו שחור
+        do Screen.drawLine(70, 30, 40, 50);
+        do Sys.wait(100);
+
+        // ציור מלבן שחור
+        do Screen.drawRectangle(50, 25, 70, 40);
+        do Sys.wait(100);
+
+        // ציור עיגול שחור
+        do Screen.setColor(true);
+        do Screen.drawCircle(150, 100, 50);
+        do Sys.wait(100);
+
+        /** המתנה קצרה
+        do Sys.wait(30000);
+        do Sys.wait(30000);
+        do Sys.wait(30000);
+
+        // מעבר לציור בלבן
+        do Output.printString("Drawing white pixels over black...\n");
+        do Screen.setColor(false); // לבן
+        do Screen.drawPixel(10, 10);
+        do Screen.drawPixel(11, 10);
+        do Screen.drawPixel(12, 10);
+
+        // מחיקת הקו
+        do Screen.drawLine(20, 20, 40, 20);
+
+        // מחיקת המלבן
+        do Screen.drawRectangle(50, 30, 70, 40);
+
+        // מחיקת העיגול
+        do Screen.drawCircle(100, 50, 10);*/
+
+        // סיום*/
+//        do Output.printString("Test complete.\n");
+//        return;
+//    }
+//}
+
