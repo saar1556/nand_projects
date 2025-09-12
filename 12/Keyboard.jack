@@ -8,8 +8,12 @@
  * A library for handling user input from the keyboard.
  */
 class Keyboard {
+
+        static int MAX_LEN;
+
         /** Initializes the keyboard. */
         function void init() {
+            let MAX_LEN = 64;
             return;
         } 
 
@@ -53,10 +57,12 @@ class Keyboard {
             // 6. advance the cursor
             // 7. return c
             var char c;
+
             while (Keyboard.keyPressed() = 0) {}
             let c = Keyboard.keyPressed();
             while (~(Keyboard.keyPressed() = 0)) {}
             do Output.printChar(c);
+            
             return c;
         }
 
@@ -85,14 +91,17 @@ class Keyboard {
             // 12.    str.appendChar(c)
             var String str;
             var char c;
-            let str = String.new(64);
+            
+            let str = String.new(MAX_LEN);
             let str = "";
+
             do Output.printString(message);
             while (true) {
                 let c = Keyboard.readChar();
                 if (c = 128) { // newline
                     return str;
                 }
+
                 if (c = 129) { // backspace
                     if (input.length() > 0) {
                         do input.eraseLastChar();
@@ -115,8 +124,10 @@ class Keyboard {
         function int readInt(String message) {
             var String input;
             var char c;
-            let input = String.new(64);
+
+            let input = String.new(MAX_LEN);
             do Output.printString(message);
+            
             while (true) {
                 let c = Keyboard.readChar();
                 if (c = String.newLine()) {
@@ -134,6 +145,7 @@ class Keyboard {
                     do Output.printChar(c);
                 }
             }
+            
             return input.intValue();
         }
 }

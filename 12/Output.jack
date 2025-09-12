@@ -21,9 +21,13 @@ class Output {
     // Character map for displaying characters
     static Array charMaps; 
     static int cursorRow, cursorCol;
+    static int LAST_COL,LAST_ROW;
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let LAST_COL=63;
+        let LAST_ROW=22;
+
         do Output.initMap();
         do Output.moveCursor(0, 0);
         return;
@@ -185,7 +189,7 @@ class Output {
         let cursorRow = i;
         let cursorCol = j;
 
-        if (i > 22 | j > 63) { return; }
+        if ((i > LAST_ROW) | (j > LAST_COL)) { return; }
 
         do Output.clearCharAt(i, j);
         return;
@@ -237,7 +241,7 @@ class Output {
 
         let cursorCol = cursorCol + 1;
 
-        if (cursorCol = 64) {
+        if (cursorCol = (LAST_COL+1)) {
             do Output.println();
         }
         return; 
@@ -273,7 +277,7 @@ class Output {
     function void println() {
         let cursorCol = 0;
         let cursorRow = cursorRow + 1;
-        if (cursorRow = 23) {  // wrap around
+        if (cursorRow = (LAST_ROW+1)) {  // wrap around
             let cursorRow = 0;
         }
         return;
@@ -286,7 +290,7 @@ class Output {
         } 
         else {
             if (cursorRow > 0) {
-                let cursorCol = 63;  
+                let cursorCol = LAST_COL;  
                 let cursorRow = cursorRow - 1;
             }
             else {
@@ -304,7 +308,7 @@ class Output {
         var int x, y, x2, y2;
 
         // grid limits: 64 cols (512/8), 23 rows (256/11 truncated)
-        if ((row < 0) | (row > 22) | (col < 0) | (col > 63)) {
+        if ((row < 0) | (row > LAST_ROW) | (col < 0) | (col > LAST_COL)) {
             return;
         }
 
