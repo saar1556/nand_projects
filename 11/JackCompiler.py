@@ -23,9 +23,10 @@ def compile_file(
         output_file (typing.TextIO): writes all output to this file.
     """
     tokenizer = JackTokenizer(input_file)
-    compiler = CompilationEngine(
-        tokenizer, output_file)
-    compiler.compile_class()    
+    engine = CompilationEngine(tokenizer, output_file)
+
+    if tokenizer.has_more_tokens():
+        engine.compile_class()
 
 
 if "__main__" == __name__:

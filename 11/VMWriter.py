@@ -38,9 +38,22 @@ class VMWriter:
         "SHIFTRIGHT": "shiftright"
     }
 
+    kind_to_segment = {
+        "STATIC": "STATIC",
+        "FIELD": "THIS",
+        "ARG": "ARG",
+        "VAR": "LOCAL"
+    }
+
     def __init__(self, output_stream: typing.TextIO) -> None:
         """Creates a new file and prepares it for writing VM commands."""
         self.output = output_stream
+
+
+    def translate_segment(self, ttype: str) -> str:
+        if ttype in self.kind_to_segment:
+            return self.kind_to_segment[ttype]
+        return ttype
 
     
     def write_push(self, segment: str, index: int) -> None:
@@ -51,6 +64,7 @@ class VMWriter:
             "LOCAL", "STATIC", "THIS", "THAT", "POINTER", "TEMP"
             index (int): the index to push to.
         """
+        segment=self.translate_segment(segment)
         if segment not in self.SEGMENTS :
             raise ValueError(f"Invalid segment: {segment}")
 
@@ -65,6 +79,8 @@ class VMWriter:
             "LOCAL", "STATIC", "THIS", "THAT", "POINTER", "TEMP".
             index (int): the index to pop from.
         """
+        segment=self.translate_segment(segment)
+
         if segment not in self.SEGMENTS :
             raise ValueError(f"Invalid segment: {segment}")
 

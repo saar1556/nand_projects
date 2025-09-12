@@ -11,7 +11,6 @@ from VMWriter import VMWriter
 from SymbolTable import SymbolTable
 
 
-
 class CompilationEngine:
     """
     Compilation engine for the Jack programming language.
@@ -22,15 +21,7 @@ class CompilationEngine:
     and compiles classes, subroutines, statements, expressions, and terms.
     """
 
-    # Mapping from internal token types to XML tags
-    xml_tags  = {
-        "KEYWORD" : "keyword",
-        "SYMBOL" : "symbol",
-        "IDENTIFIER" : "identifier",
-        "INT_CONST" : "integerConstant",
-        "STRING_CONST" : "stringConstant"
-        }
-    
+    # Optional op name map (unused by code, kept for readability)
     arithmeticsOps = {
         '+': "ADD",
         '-': "SUB",
@@ -41,604 +32,502 @@ class CompilationEngine:
         '=': "EQ",
     }
 
+    # SymbolTable kind → VM segment mapping
     kinds = {
         "VAR": "LOCAL",
         "ARG": "ARG",
         "STATIC": "STATIC",
-        "FIELD": "THIS"
+        "FIELD": "THIS",
     }
 
-    
-    def __init__(self, tokenizer, output_stream):
-        """
-        Initialize the CompilationEngine.
+    n_args: int = 0
+    label_counter: int = 0
+    current_class: str = ""
 
-        Args:
-            tokenizer (JackTokenizer): Tokenizer providing Jack tokens.
-            output_stream: Stream to write VM code to via VMWriter.
-        """
+    tokenizer: JackTokenizer = None
+    vm_writer: VMWriter = None
+    symbol_table: SymbolTable = None
+
+    
+    def __init__(self, tokenizer: JackTokenizer, output_stream: typing.TextIO) -> None:
         self.tokenizer = tokenizer
         self.vm_writer = VMWriter(output_stream)
-        self.symbolTable = SymbolTable()
-        self.label_counter = 0
-        self.className = ""
+        self.symbol_table = SymbolTable()
 
-        # Mapping from token types to functions returning their values
-        self.token_value_getters  = {
-            "KEYWORD" : self.tokenizer.keyword,
-            "SYMBOL" : self.tokenizer.symbol,
-            "IDENTIFIER" : self.tokenizer.identifier,
-            "INT_CONST" : self.tokenizer.int_val,
-            "STRING_CONST" : self.tokenizer.string_val
-        }
+    # ---------------------------------------------------------------------
+    # Core helpers
+    # ---------------------------------------------------------------------
 
-
-    def advance(self) -> None:
-        """Advances the tokenizer to the next token."""
-        if not self.tokenizer.has_more_tokens():
-            raise ValueError("No more tokens available.")
-        self.tokenizer.advance()
-
-
-    def _expect(self, token: str, context: str) -> None:
-        """
-        Expect the current token to match the given value.
-
-        Args:
-            token: The expected token string.
-            context: Context of the call (function name) for error messages.
-
-        Raises:
-            ValueError if the current token does not match.
-        """
-        if self.tokenizer.current_token != token:
+    def eat(self, expected_token: str) -> None:
+        """Consumes the current token and advances to the next token."""
+        if self.tokenizer.current_token != expected_token:
             raise ValueError(
-                f"[{context}] Expected '{token}', got '{self.tokenizer.current_token}'"
+                f"Unexpected token: got '{self.tokenizer.current_token}', expected '{expected_token}'."
             )
         if self.tokenizer.has_more_tokens():
             self.tokenizer.advance()
-    
-    
-    def compile_class(self) -> None:
-        """
-        Compile a complete Jack class.
 
-        Grammar:
-            class: 'class' className '{' classVarDec* subroutineDec* '}'
-        """
-        self.advance()
-        self._expect('class', 'compile_class')
+    def _seg(self, kind: str) -> str:
+        """Map a SymbolTable kind to a VM segment name."""
+        if kind not in self.kinds:
+            raise ValueError(f"Unknown variable kind: {kind}")
+        return self.kinds[kind]
+
+    def _read_type(self) -> str:
+        """Read a Jack type token (int|char|boolean|className) and advance."""
+        tok = self.tokenizer.current_token
+        if tok in {"int", "char", "boolean"}:
+            self.eat(tok)
+            return tok
+        if self.tokenizer.token_type() == "IDENTIFIER":
+            name = tok
+            self.eat(name)
+            return name
+        raise ValueError(f"Expected type (int|char|boolean|className), got '{tok}'")
+
+    # ---------------------------------------------------------------------
+    # class: 'class' className '{' classVarDec* subroutineDec* '}'
+    # ---------------------------------------------------------------------
+    def compile_class(self) -> None:
+        # prime tokenizer
+        self.tokenizer.advance()
+
+        self.eat('class')
+        # className
         if self.tokenizer.token_type() != 'IDENTIFIER':
-            raise ValueError(
-                f"[compile_class] Expected class name (identifier), "
-                f"got '{self.tokenizer.current_token}'"
-            )
-        self.className = self.tokenizer.current_token
-        self.advance()
-        self._expect('{', 'compile_class')
+            raise ValueError(f"Expected class name (identifier), got '{self.tokenizer.current_token}'")
+        self.current_class = self.tokenizer.current_token
+        self.eat(self.current_class)
+
+        self.eat('{')
+        # classVarDec*
         while self.tokenizer.current_token in {'static', 'field'}:
             self.compile_class_var_dec()
+        # subroutineDec*
         while self.tokenizer.current_token in {'constructor', 'function', 'method'}:
             self.compile_subroutine()
-        self._expect('}', 'compile_class')
-        
-       
-    def compile_var_declaration(self, kind: str) -> None:
-        """
-        Compile a variable declaration of a given kind (helper).
+        self.eat('}')
 
-        Args:
-            kind: Variable kind ('STATIC', 'FIELD', or 'VAR').
+    # classVarDec: ('static'|'field') type varName (',' varName)* ';'
+    def compile_class_var_dec(self) -> None:
+        if self.tokenizer.current_token not in {'static', 'field'}:
+            raise ValueError(f"Expected 'static' or 'field' in classVarDec, got '{self.tokenizer.current_token}'")
+        kind = self.tokenizer.current_token.upper()  # STATIC | FIELD (SymbolTable kinds)
+        self.eat(self.tokenizer.current_token)
+        self._compile_var_declaration(kind)
 
-        Grammar:
-            type varName (',' varName)* ';'
-        """
-        # Parse type
-        if self.tokenizer.current_token in {'int', 'char', 'boolean'} :
-            type_name = self.tokenizer.current_token
-            self.advance()
-        elif self.tokenizer.token_type() == 'IDENTIFIER':
-            type_name = self.tokenizer.current_token
-            self.advance()
-        else:
-            raise ValueError(
-                f"Expected type (int, char, boolean, or className), "
-                f"got '{self.tokenizer.current_token}'"
-            )
+    # varDec: 'var' type varName (',' varName)* ';'
+    def compile_var_dec(self) -> None:
+        self.eat('var')
+        self._compile_var_declaration('VAR')
 
+    def _compile_var_declaration(self, kind: str) -> None:
+        type_name = self._read_type()
         # first varName
         if self.tokenizer.token_type() != 'IDENTIFIER':
-            raise ValueError(
-                f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
-            )
+            raise ValueError(f"Expected varName (identifier), got '{self.tokenizer.current_token}'")
         name = self.tokenizer.current_token
-        self.symbolTable.define(name, type_name, kind)
-        self.advance()
-
-        # additional varNames separated by commas
+        self.symbol_table.define(name, type_name, kind)
+        self.eat(name)
+        # additional varNames
         while self.tokenizer.current_token == ',':
-            self.advance()
+            self.eat(',')
             if self.tokenizer.token_type() != 'IDENTIFIER':
-                raise ValueError(
-                    f"Expected varName after ',', got '{self.tokenizer.current_token}'"
-                )
+                raise ValueError(f"Expected varName after ',', got '{self.tokenizer.current_token}'")
             name = self.tokenizer.current_token
-            self.symbolTable.define(name, type_name, kind)
-            self.advance()
+            self.symbol_table.define(name, type_name, kind)
+            self.eat(name)
+        self.eat(';')
 
-        # final semicolon
-        self._expect(';', 'compile_var_declaration')
-    
-    
-    def compile_class_var_dec(self) -> None:
-        """
-        Compile a class-level variable declaration ('static' or 'field').
-
-        Grammar:
-            classVarDec: ('static' | 'field') type varName (',' varName)* ';'
-        """
-        if self.tokenizer.current_token not in {'static', 'field'}:
-            raise ValueError(
-                f"Expected 'static' or 'field' in classVarDec, "
-                f"got '{self.tokenizer.current_token}'"
-            )
-        kind = self.tokenizer.current_token.upper()
-        self.advance()
-        self.compile_var_declaration(kind)
-        
-        
+    # ---------------------------------------------------------------------
+    # subroutineDec: ('constructor'|'function'|'method') ('void'|type)
+    #                 subroutineName '(' parameterList ')' subroutineBody
+    # subroutineBody: '{' varDec* statements '}'
+    # ---------------------------------------------------------------------
     def compile_subroutine(self) -> None:
-        """
-        Compile a subroutine: constructor, function, or method.
-
-        Grammar:
-            subroutineDec: ('constructor' | 'function' | 'method') ('void' | type)
-                           subroutineName '(' parameterList ')' subroutineBody
-            subroutineBody: '{' varDec* statements '}'
-        """
         if self.tokenizer.current_token not in {'constructor', 'function', 'method'}:
             raise ValueError(
-                f"Expected 'constructor', 'function', or 'method' in subroutineDec, "
-                f"got '{self.tokenizer.current_token}'"
+                f"Expected 'constructor', 'function', or 'method', got '{self.tokenizer.current_token}'"
             )
-        
-        # Start a new subroutine scope
-        subroutine_type = self.tokenizer.current_token
-        self.symbolTable.start_subroutine()
-        self.advance()
+        subroutine_type = self.tokenizer.current_token  # remember kind
 
-        # Handle 'method': add 'this' as the first argument
+        # new scope
+        self.symbol_table.start_subroutine()
+        self.eat(subroutine_type)
+
+        # implicit 'this' for methods
         if subroutine_type == 'method':
-            self.symbolTable.define('this', self.className, 'ARG')
+            self.symbol_table.define('this', self.current_class, 'ARG')
 
-        # Parse return type
+        # return type
         void_func = False
         if self.tokenizer.current_token == 'void':
             void_func = True
-        elif self.tokenizer.current_token not in {'int', 'char', 'boolean'} \
-            and self.tokenizer.token_type() != 'IDENTIFIER':
-            raise ValueError( 
-                f"Expected return type (void, int, char, boolean, or className), "
-                f"got '{self.tokenizer.current_token}'"
-            )
-        self.advance()
+            self.eat('void')
+        else:
+            _ = self._read_type()  # discard, kept for validation
 
-        # Parse subroutine name
+        # subroutineName
         if self.tokenizer.token_type() != 'IDENTIFIER':
-            raise ValueError(
-                f"Expected subroutineName (identifier), got '{self.tokenizer.current_token}'"
-            )
-        subroutine_name = f"{self.className}.{self.tokenizer.current_token}"
-        self.advance()
+            raise ValueError(f"Expected subroutineName (identifier), got '{self.tokenizer.current_token}'")
+        sub_name = self.tokenizer.current_token
+        self.eat(sub_name)
+        full_name = f"{self.current_class}.{sub_name}"
 
-        # Parse parameter list
-        self._expect( '(', 'compile_subroutine')
+        # params
+        self.eat('(')
         self.compile_parameter_list()
-        self._expect(')', 'compile_subroutine')
-        self._expect('{', 'compile_subroutine')
+        self.eat(')')
 
-        # Compile all varDecs and count local variables
+        # body
+        self.eat('{')
         while self.tokenizer.current_token == 'var':
             self.compile_var_dec()
-        n_locals = self.symbolTable.var_count('VAR')
+        n_locals = self.symbol_table.var_count('VAR')
+        self.vm_writer.write_function(full_name, n_locals)
 
-        # VM function declaration
-        self.vm_writer.write_function(subroutine_name, n_locals)
-        
-        # Handle 'constructor': allocate memory for the new object
         if subroutine_type == 'constructor':
-            n_fields = self.symbolTable.var_count('FIELD')
-            self.vm_writer.write_push("CONST", n_fields)
-            self.vm_writer.write_call("Memory.alloc", 1)
-            self.vm_writer.write_pop("POINTER", 0)
-        # Handle 'method': set 'this' to point to the object
+            n_fields = self.symbol_table.var_count('FIELD')
+            self.vm_writer.write_push('CONST', n_fields)
+            self.vm_writer.write_call('Memory.alloc', 1)
+            self.vm_writer.write_pop('POINTER', 0)  # this = allocated base
         elif subroutine_type == 'method':
-            self.vm_writer.write_push("ARG", 0)
-            self.vm_writer.write_pop("POINTER", 0)
+            self.vm_writer.write_push('ARG', 0)     # push this
+            self.vm_writer.write_pop('POINTER', 0)  # anchor 'this'
 
-        # Compile statements inside the subroutine
         self.compile_statements()
-        self._expect('}', 'compile_subroutine')
+        self.eat('}')
+        # We rely on an explicit 'return' inside statements.
 
-        # Remove garbage return value for void functions
-        if void_func:
-            self.vm_writer.write_pop("TEMP", 0) 
-        
-
+    # parameterList: ((type varName) (',' type varName)*)?
     def compile_parameter_list(self) -> None:
-        """
-        Compiles a (possibly empty) parameter list, not including the enclosing "()".
-
-        Grammar:
-            parameterList: ((type varName) (',' type varName)*)?
-        """
-        while self.tokenizer.current_token != ')':
-            # type: either keyword (int|char|boolean) or identifier (className)
-            if self.tokenizer.current_token in {'int', 'char', 'boolean'}:
-                type_name = self.tokenizer.current_token
-                self.advance()
-            elif self.tokenizer.token_type() == 'IDENTIFIER':
-                type_name = self.tokenizer.current_token
-                self.advance()
-            else:
-                raise ValueError(
-                    f"Expected type (int, char, boolean, or className) in parameterList, "
-                    f"got '{self.tokenizer.current_token}'"
-                )
-
-            # varName
+        if self.tokenizer.current_token == ')':
+            return  # empty
+        while True:
+            typ = self._read_type()
             if self.tokenizer.token_type() != 'IDENTIFIER':
-                raise ValueError(
-                    f"Expected varName (identifier), got '{self.tokenizer.current_token}'"
-                )
+                raise ValueError(f"Expected parameter name, got '{self.tokenizer.current_token}'")
             name = self.tokenizer.current_token
-            self.symbolTable.define(name, type_name, 'ARG')
-            self.advance()
+            self.symbol_table.define(name, typ, 'ARG')
+            self.eat(name)
+            if self.tokenizer.current_token != ',':
+                break
+            self.eat(',')
 
-            # additional varNames separated by commas
-            if self.tokenizer.current_token == ',':
-                self.advance()
-
-
-    def compile_var_dec(self) -> None:
-        """Compile a local variable declaration within a subroutine."""
-        self._expect('var', 'compile_var_dec')
-        self.compile_var_declaration('VAR')
-
-    
+    # ---------------------------------------------------------------------
+    # statements: (let|if|while|do|return)*
+    # ---------------------------------------------------------------------
     def compile_statements(self) -> None:
-        """Compiles a sequence of statements, not including the enclosing."""
         while self.tokenizer.current_token in {'let', 'if', 'while', 'do', 'return'}:
-            if self.tokenizer.current_token == 'let':
+            tok = self.tokenizer.current_token
+            if tok == 'let':
                 self.compile_let()
-            elif self.tokenizer.current_token == 'if':
+            elif tok == 'if':
                 self.compile_if()
-            elif self.tokenizer.current_token == 'while':
+            elif tok == 'while':
                 self.compile_while()
-            elif self.tokenizer.current_token == 'do':
+            elif tok == 'do':
                 self.compile_do()
             else:
                 self.compile_return()
 
-
+    # do subroutineCall ';'    -- discard the return value
     def compile_do(self) -> None:
-        """
-        Compile a 'do' statement.
+        self.eat('do')
+        # subroutineCall
+        self._compile_subroutine_call()
+        self.eat(';')
+        self.vm_writer.write_pop('TEMP', 0)
 
-        Notes:
-            - The return value of the call is discarded (popped into TEMP 0).
-        """
-        self._expect('do', 'compile_do')
-        self.compile_term()
-        self._expect(';', 'compile_do')
-        self.vm_writer.write_pop("TEMP", 0)  # Discard return value
-
-
-    def compile_let(self) -> None:
-        """
-        Compile a 'let' statement.
-
-        Grammar:
-            let varName ('[' expression ']')? '=' expression ';'
-        Notes:
-            - Handles array assignments by computing the target address in TEMP 0.
-        """
-        self._expect('let', 'compile_let')
-        
-        # Variable name
+    def _compile_subroutine_call(self) -> None:
+        # Read the initial identifier (subroutineName | className | varName)
         if self.tokenizer.token_type() != 'IDENTIFIER':
-            raise ValueError(
-                f"Expected varName (identifier) after 'let', got '{self.tokenizer.current_token}'"
-            )
-        var_name = self.tokenizer.current_token
-        kind = self.kinds[self.symbolTable.kind_of(var_name)]
-        index = self.symbolTable.index_of(var_name)
-        self.advance()
-        
-        # Array assignment?
+            raise ValueError(f"Expected identifier to start subroutine call, got '{self.tokenizer.current_token}'")
+        name = self.tokenizer.current_token
+        self.eat(name)
+
+        extra = 0
+        callee: str
+        nxt = self.tokenizer.current_token  # after eating 'name'
+        if nxt == '.':
+            # name.sub(...)
+            self.eat('.')
+            if self.tokenizer.token_type() != 'IDENTIFIER':
+                raise ValueError("Expected subroutineName after '.'")
+            sub = self.tokenizer.current_token
+            self.eat(sub)
+            if self.symbol_table.kind_of(name) is not None:
+                seg = self._seg(self.symbol_table.kind_of(name))
+                idx = self.symbol_table.index_of(name)
+                typ = self.symbol_table.type_of(name)
+                self.vm_writer.write_push(seg, idx)  # receiver
+                callee = f"{typ}.{sub}"
+                extra = 1
+            else:
+                # static call on a class
+                callee = f"{name}.{sub}"
+        else:
+            # method on this: name(...)
+            self.vm_writer.write_push('POINTER', 0)
+            callee = f"{self.current_class}.{name}"
+            extra = 1
+
+        self.eat('(')
+        self.compile_expression_list()
+        self.eat(')')
+        self.vm_writer.write_call(callee, self.n_args + extra)
+
+    # let var = expr; | let arr[expr] = expr;
+    def compile_let(self) -> None:
+        self.eat('let')
+        if self.tokenizer.token_type() != 'IDENTIFIER':
+            raise ValueError(f"Expected varName after 'let', got '{self.tokenizer.current_token}'")
+        name = self.tokenizer.current_token
+        kind = self.symbol_table.kind_of(name)
+        if kind is None:
+            raise ValueError(f"Undeclared variable: {name}")
+        idx = self.symbol_table.index_of(name)
+        seg = self._seg(kind)
+        self.eat(name)
+
         is_array = False
         if self.tokenizer.current_token == '[':
             is_array = True
-            self.advance()  # eat '['
-            # push base address
-            self.vm_writer.write_push(kind, index) 
-            self.compile_expression()       
-            self._expect( ']', 'compile_let')
-            self.vm_writer.write_arithmetic("ADD")
-            self.vm_writer.write_pop("TEMP", 0)  # Store the address in TEMP 0
-        
-        self._expect('=', 'compile_let')
+            self.eat('[')
+            self.vm_writer.write_push(seg, idx)  # base address
+            self.compile_expression()             # index
+            self.eat(']')
+            self.vm_writer.write_arithmetic('ADD')
+
+        self.eat('=')
         self.compile_expression()
-        self._expect(';', 'compile_let')
 
         if is_array:
-            self.vm_writer.write_push("TEMP", 0)  # Retrieve the address from TEMP 0
-            self.vm_writer.write_pop("POINTER", 1)  # THAT points to the target address
-            self.vm_writer.write_pop("THAT", 0)  # Pop the value into THAT 0  
+            # stack: ... [address, value]
+            self.vm_writer.write_pop('TEMP', 0)      # value
+            self.vm_writer.write_pop('POINTER', 1)   # THAT = address
+            self.vm_writer.write_push('TEMP', 0)     # value
+            self.vm_writer.write_pop('THAT', 0)
         else:
-            self.vm_writer.write_pop(kind, index)  
+            self.vm_writer.write_pop(seg, idx)
+        self.eat(';')
 
-
+    # while (expr) { statements }
     def compile_while(self) -> None:
-        """
-        Compile a 'while' statement.
-
-        Grammar:
-            while '(' expression ')' '{' statements '}'
-        """
-        self._expect('while', 'compile_while')
-
-        # Generate unique labels
-        label_start = f"WHILE_EXP{self.label_counter}"
-        label_end = f"WHILE_END{self.label_counter}"
+        idx = self.label_counter
         self.label_counter += 1
+        self.vm_writer.write_label(f"WHILE_EXP{idx}")
 
-        self.vm_writer.write_label(label_start)
-        self._expect("(", 'compile_while')
+        self.eat('while')
+        self.eat('(')
         self.compile_expression()
+        self.eat(')')
 
-        # Exit loop if condition is false (0)
-        self._expect( ")", 'compile_while')  
-        self.vm_writer.write_arithmetic("NOT")
-        self.vm_writer.write_if(label_end)
+        self.vm_writer.write_arithmetic('NOT')
+        self.vm_writer.write_if(f"WHILE_END{idx}")
 
-        # Parse body
-        self._expect("{", 'compile_while')     
+        self.eat('{')
         self.compile_statements()
-        self._expect( "}", 'compile_while') 
-        self.vm_writer.write_goto(label_start)
-        self.vm_writer.write_label(label_end)  
+        self.eat('}')
 
+        self.vm_writer.write_goto(f"WHILE_EXP{idx}")
+        self.vm_writer.write_label(f"WHILE_END{idx}")
 
+    # return [expr] ;
     def compile_return(self) -> None:
-        """
-        Compile a 'return' statement.
-
-        Notes:
-            - If the function is void, pushes 0 as a dummy return value.
-        """
-        self._expect('return', 'compile_return')
-
-        # non-void function
+        self.eat('return')
         if self.tokenizer.current_token != ';':
             self.compile_expression()
-        
-        # void function
         else:
-            self.vm_writer.write_push("CONST", 0)
-        self._expect(';', 'compile_return')
-        
+            # void return
+            self.vm_writer.write_push('CONST', 0)
+        self.eat(';')
         self.vm_writer.write_return()
 
-    
-    
+    # if (expr) { statements } (else { statements })?
     def compile_if(self) -> None:
-        """
-        Compile an 'if' statement, optionally with an 'else' clause.
-
-        Grammar:
-            if '(' expression ')' '{' statements '}' ('else' '{' statements '}')?
-        """
-        self._expect('if', 'compile_if')
-
-        # Parse condition
-        self._expect("(", 'compile_if')
+        self.eat('if')
+        self.eat('(')
         self.compile_expression()
-        self._expect(")", 'compile_if')
-        
-        # Generate unique labels
-        label_else = f"IF_ELSE{self.label_counter}"
-        label_end = f"IF_END{self.label_counter}"
+        self.eat(')')
+
+        idx = self.label_counter
         self.label_counter += 1
-        
-        # Jump to ELSE if condition is false
-        self.vm_writer.write_arithmetic("NOT")
-        self.vm_writer.write_if(label_else)
-        
-        # Compile "then" block
-        self._expect("{", 'compile_if')
+
+        self.vm_writer.write_arithmetic('NOT')
+        self.vm_writer.write_if(f"IF_FALSE{idx}")
+
+        self.eat('{')
         self.compile_statements()
-        self._expect( "}", 'compile_if')
-        self.vm_writer.write_goto(label_end)
-        
-        # Compile "else" block if present
-        self.vm_writer.write_label(label_else)
+        self.eat('}')
+
         if self.tokenizer.current_token == 'else':
-            self.advance()
-            self._expect("{", 'compile_if')
+            self.vm_writer.write_goto(f"IF_END{idx}")
+            self.vm_writer.write_label(f"IF_FALSE{idx}")
+            self.eat('else')
+            self.eat('{')
             self.compile_statements()
-            self._expect("}", 'compile_if')
-        
-        self.vm_writer.write_label(label_end)
-        
+            self.eat('}')
+            self.vm_writer.write_label(f"IF_END{idx}")
+        else:
+            self.vm_writer.write_label(f"IF_FALSE{idx}")
 
+    # ---------------------------------------------------------------------
+    # Expressions & terms
+    # ---------------------------------------------------------------------
+    def aritmetic_op(self, op: str) -> None:
+        if op == '+':
+            self.vm_writer.write_arithmetic('ADD')
+        elif op == '-':
+            self.vm_writer.write_arithmetic('SUB')
+        elif op == '*':
+            self.vm_writer.write_call('Math.multiply', 2)
+        elif op == '/':
+            self.vm_writer.write_call('Math.divide', 2)
+        elif op == '&':
+            self.vm_writer.write_arithmetic('AND')
+        elif op == '|':
+            self.vm_writer.write_arithmetic('OR')
+        elif op == '<':
+            self.vm_writer.write_arithmetic('LT')
+        elif op == '>':
+            self.vm_writer.write_arithmetic('GT')
+        elif op == '=':
+            self.vm_writer.write_arithmetic('EQ')
+        elif op == '^':
+            self.vm_writer.write_arithmetic('SHIFTLEFT')
+        elif op == '#':
+            self.vm_writer.write_arithmetic('SHIFTRIGHT')
+        else:
+            raise ValueError(f"Unknown binary operator: {op}")
+
+    def _jack_char_code(self, ch: str) -> int:
+        # Normalize curly quotes, if needed
+        if ch in {'“', '”'}:
+            ch = '"'
+        if ch == '’':
+            ch = "'"
+        c = ord(ch)
+        if 32 <= c <= 126:
+            return c
+        if ch == '\n':
+            return 128  # OS.newLine
+        if ch == '\b':
+            return 129  # OS.backSpace
+        raise ValueError(f"Illegal character in Jack string literal: {repr(ch)}")
+
+    # expression: term (op term)*
     def compile_expression(self) -> None:
-        """Compiles an expression."""
-        if self.tokenizer.current_token in ( ';', ')', '}', ']'): 
-            return
-        
         self.compile_term()
-        while self.tokenizer.current_token in {'+', '-', '*', '/', '&', '|', '<', '>', '='}:
+        ops = {'+', '-', '*', '/', '&', '|', '<', '>', '=', '^', '#'}
+        while self.tokenizer.current_token in ops:
             op = self.tokenizer.current_token
-            self.advance()
+            self.eat(op)
             self.compile_term()
-            if op in self.arithmeticsOps:
-                self.vm_writer.write_arithmetic(self.arithmeticsOps[op])
-            elif op == '*':
-                self.vm_writer.write_call("Math.multiply", 2)
-            elif op == '/':
-                self.vm_writer.write_call("Math.divide", 2)
-            else:
-                raise ValueError(f"Unknown binary operator: {op}")
+            self.aritmetic_op(op)
 
-
+    # term: integerConstant | stringConstant | keywordConstant | varName |
+    #       varName '[' expression ']' | subroutineCall | '(' expression ')' |
+    #       unaryOp term
     def compile_term(self) -> None:
-        """
-        Compile a single term.
+        tok = self.tokenizer.current_token
+        ttype = self.tokenizer.token_type()
 
-        Grammar:
-            term: integerConstant | stringConstant | keywordConstant | varName 
-                  | varName '[' expression ']' | subroutineCall | '(' expression ')' 
-                  | unaryOp term
-        """
-        name = self.tokenizer.current_token
-        
-        # integer constant
-        if self.tokenizer.token_type() == 'INT_CONST':
-            self.vm_writer.write_push("CONST", int(name))
-            self.advance()
-        
-        # string constant
-        elif self.tokenizer.token_type() == 'STRING_CONST':
-            string_val = self.tokenizer.string_val() 
-            str_len = len(string_val)
-            self.vm_writer.write_push("CONST", str_len)
-            self.vm_writer.write_call("String.new", 1)
-            for char in string_val:
-                self.vm_writer.write_push("CONST", ord(char))
-                self.vm_writer.write_call("String.appendChar", 2)
-            self.advance()
+        if ttype == 'INT_CONST':
+            self.vm_writer.write_push('CONST', self.tokenizer.int_val())
+            self.eat(tok)
+            return
 
-        # keyword constant
-        elif self.tokenizer.token_type() == 'KEYWORD':
-            #and name in ('true', 'false', 'null', 'this'):
-            if name == 'true':
-                self.vm_writer.write_push("CONST", 0)
-                self.vm_writer.write_arithmetic("NOT")
-            elif name in {'false', 'null'}:
-                self.vm_writer.write_push("CONST", 0)
-            elif name == 'this':
-                self.vm_writer.write_push("POINTER", 0)
+        if ttype == 'STRING_CONST':
+            s = self.tokenizer.string_val()
+            self.eat(tok)
+            self.vm_writer.write_push('CONST', len(s))
+            self.vm_writer.write_call('String.new', 1)
+            for ch in s:
+                self.vm_writer.write_push('CONST', self._jack_char_code(ch))
+                self.vm_writer.write_call('String.appendChar', 2)
+            return
+
+        if ttype == 'KEYWORD':
+            if tok in ('false', 'null'):
+                self.vm_writer.write_push('CONST', 0)
+            elif tok == 'true':
+                self.vm_writer.write_push('CONST', 0)
+                self.vm_writer.write_arithmetic('NOT')
+            elif tok == 'this':
+                self.vm_writer.write_push('POINTER', 0)
             else:
-                raise ValueError(f"Unexpected keyword in term: {name}")
-            self.advance()
+                raise ValueError(f"Unexpected keyword in term: {tok}")
+            self.eat(tok)
+            return
 
-        # unary operation
-        elif name in {'-', '~', '^', '#'}:
-            op = name
-            self.advance()
+        if tok == '(':  # parenthesized
+            self.eat('(')
+            self.compile_expression()
+            self.eat(')')
+            return
+
+        if tok in {'-', '~', '^', '#'}:  # unary
+            op = tok
+            self.eat(op)
             self.compile_term()
             if op == '-':
-                self.vm_writer.write_arithmetic("NEG")
+                self.vm_writer.write_arithmetic('NEG')
             elif op == '~':
-                self.vm_writer.write_arithmetic("NOT")
+                self.vm_writer.write_arithmetic('NOT')
             elif op == '^':
-                self.vm_writer.write_arithmetic("SHIFTLEFT")
+                self.vm_writer.write_arithmetic('SHIFTLEFT')
             elif op == '#':
-                self.vm_writer.write_arithmetic("SHIFTRIGHT")
-            else:
-                raise ValueError(f"Unknown unary operator: {op}")
+                self.vm_writer.write_arithmetic('SHIFTRIGHT')
+            return
 
-        # parenthesized expression
-        elif name == '(':
-            self._expect('(', 'compile_term')
-            self.compile_expression()
-            self._expect( ')', 'compile_term')
+        if ttype == 'IDENTIFIER':
+            name = tok
+            nxt = self.tokenizer.peek()
 
-        # identifier: variable, array access, or subroutine call 
-        elif self.tokenizer.token_type() == "IDENTIFIER":
-            next_tok = self.tokenizer.peek()
-            
-            # array access
-            if next_tok == '[':  
-                var_name = self.tokenizer.current_token
-                self.vm_writer.write_push(
-                        self.kinds[self.symbolTable.kind_of(var_name)], 
-                        self.symbolTable.index_of(var_name)
-                    )                
-                self.advance()  # eat varName
-                self.advance()  # eat '['
-                self.compile_expression()       
-                self._expect( ']', 'compile_term')
-                self.vm_writer.write_arithmetic("ADD")
-                self.vm_writer.write_pop("POINTER", 1)
-                self.vm_writer.write_push("THAT", 0)  
+            # subroutine call
+            if nxt in ('(', '.'):
+                # Let the shared helper consume tokens & emit the call
+                self._compile_subroutine_call()
+                return
 
-            # method call on 'this' object
-            elif next_tok == '(': 
-                func_name = self.className + '.' + name 
-                self.advance()  # eat name
-                self._expect( '(', 'compile_term')
-                self.vm_writer.write_push("POINTER", 0)  # push 'this'
-                n_args = self.compile_expression_list()
-                self._expect(')', 'compile_term')
-                self.vm_writer.write_call(func_name, n_args + 1) # include 'this' as an argument
-
-             # subroutine call with class or object
-            elif next_tok == '.': 
-                self._expect(name, 'compile_term')
-                self._expect('.', 'compile_term')
-                if self.tokenizer.token_type() != 'IDENTIFIER':
-                    raise ValueError(
-                        f"Expected subroutineName (identifier) after '.', "
-                        f"got '{self.tokenizer.current_token}'"
-                    )
-
-                if self.symbolTable.kind_of(name) is not None:
-                    # method call on an object
-                    func_name = self.symbolTable.type_of(name) + '.' + self.tokenizer.current_token 
-                    self.advance()
-                    # push the object as the first argument
-                    self.vm_writer.write_push(self.kinds[self.symbolTable.kind_of(name)],
-                                            self.symbolTable.index_of(name))
-                    self._expect('(', 'compile_term')
-                    n_args = self.compile_expression_list() + 1 # include object as argument
-                else:
-                    # class function call
-                    func_name = name + '.' + self.tokenizer.current_token
-                    self.advance()
-                    self._expect( '(', 'compile_term')
-                    n_args = self.compile_expression_list()
-                self._expect(')', 'compile_term')
-
-                self.vm_writer.write_call(func_name, n_args)
-
-            # simple variable
-            else: 
-                var_name = self.tokenizer.current_token
-                self.vm_writer.write_push(
-                        self.kinds[self.symbolTable.kind_of(var_name)], 
-                        self.symbolTable.index_of(var_name)
-                    )                
-                self.advance()
-        else:
-            raise ValueError(f"Unexpected token in term: {name}")
-
-
-    def compile_expression_list(self) -> int:
-        """
-        Compile a (possibly empty) comma-separated list of expressions.
-
-        Returns:
-            int: Number of expressions compiled (used for argument count).
-        """
-        n_args = 0
-        if self.tokenizer.current_token != ")":
-            self.compile_expression()
-            n_args += 1
-            while self.tokenizer.current_token == ',':
-                self.advance()
+            # array access: varName '[' expression ']'
+            if nxt == '[':
+                kind = self.symbol_table.kind_of(name)
+                if kind is None:
+                    raise ValueError(f"Undeclared array: {name}")
+                seg = self._seg(kind)
+                idx = self.symbol_table.index_of(name)
+                self.vm_writer.write_push(seg, idx)  # base
+                self.eat(name)
+                self.eat('[')
                 self.compile_expression()
-                n_args += 1
-        return n_args
-        
+                self.eat(']')
+                self.vm_writer.write_arithmetic('ADD')
+                self.vm_writer.write_pop('POINTER', 1)
+                self.vm_writer.write_push('THAT', 0)
+                return
+
+            # simple var
+            kind = self.symbol_table.kind_of(name)
+            if kind is None:
+                raise ValueError(f"Undeclared variable: {name}")
+            seg = self._seg(kind)
+            idx = self.symbol_table.index_of(name)
+            self.vm_writer.write_push(seg, idx)
+            self.eat(name)
+            return
+
+        raise ValueError(f"Invalid term: {tok} ({ttype})")
+
+    # expressionList: (expression (',' expression)*)?
+    def compile_expression_list(self) -> None:
+        self.n_args = 0
+        if self.tokenizer.current_token == ')':
+            return
+        while True:
+            self.compile_expression()
+            self.n_args += 1
+            if self.tokenizer.current_token != ',':
+                break
+            self.eat(',')
