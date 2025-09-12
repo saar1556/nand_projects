@@ -12,14 +12,52 @@
  */
 class Screen {
 
+
         static boolean color;
+        static Array twoToThe,sixteenMulipliers,baseAddresses; 
 
         /** Initializes the Screen. */
         function void init() {
             do Screen.clearScreen();
+            do Screen.initArrays();
             let color = true;
             return;
         }
+
+        function void initArrays() {
+            var int i,culmative;
+
+            let twoToThe = Array.new(16);
+            let sixteenMulipliers = Array.new(32);
+            let baseAddresses = Array.new(256);
+
+            let i = 0;
+            while (i < 16) {
+                if (i = 0) {let twoToThe[i] = 1;}
+                else {let twoToThe[i] = twoToThe[i-1] + twoToThe[i-1];}
+                let i = i+1;
+            }
+
+            let culmative = 0;
+            let i = 0;
+            while (i<32) {
+                let sixteenMulipliers[i] = culmative;
+                let culmative = culmative + 16;
+                let i = i+1;
+            }
+
+
+            let culmative = 16384;
+            let i = 0;
+            while (i < 256) {
+                let baseAddresses[i] = culmative;
+                let culmative = culmative + 32;
+                let i = i+1;
+            }
+
+            return;
+        }
+
 
         /** Erases the entire screen. */
         function void clearScreen() {
@@ -61,27 +99,28 @@ class Screen {
 
         /** Draws the (x,y) pixel, using the current color. */
         function void drawPixel(int x, int y) {
-            var int y32, xDev16, address, addressVal, xMod16;
-            let xDev16 = Screen.shiftRight(x, 4);
-            let y32 = Screen.shiftLeft(y, 5);
-            let address = (xDev16 + y32 + 16384);
-            let addressVal = Memory.peek(address);
-            let xMod16 = x & 15;
-            // set the specific pixel to 1
+            var int x_over,r,addr,value,post_value;
+            let x_over = x/16;
+            let r = x - sixteenMulipliers[x_over];
+            let addr = baseAddresses[y] + x_over;
+
+            let value = Memory.peek(addr);
             if (color) {
-                let addressVal = (addressVal | Screen.shiftLeft(1, xMod16));
+                let post_value = value | twoToThe[r];
             }
-            // set the specific pixel to 0
-            else {
-                let addressVal = (addressVal & (~(Screen.shiftLeft(1, xMod16))));
+            else  {
+                let post_value = value & (~twoToThe[r]);
             }
-            do Memory.poke(address, addressVal);
+
+            if (~(post_value = value))
+            {
+                do Memory.poke(addr,post_value); 
+            }
             return;
         }
 
         /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
         function void drawLine(int x1, int y1, int x2, int y2) {
-
             var int x, y, a, b, diff, dx, dy, wordStart, wordEnd, i, address;
             let x = x1;
             let y = y1;
@@ -89,7 +128,8 @@ class Screen {
             let diff = 0;
             let dx = Math.abs(x1 - x2);
             let dy = Math.abs(y1 - y2);
-            
+
+        /**            
             // Case: horizontal line
             if (dy = 0) {
                  // Compute word indices
@@ -153,6 +193,47 @@ class Screen {
                     let diff = diff - dx;
                 }
             }
+            return; */
+            
+            //if ((x1 = x2) & (y1 = y2)) {do Screen.drawPixel(x1,y1); return;}
+
+            while ((Math.abs(a) < (dx + 1)) & (Math.abs(b) < (dy + 1))) {
+                do Screen.drawPixel((x + a), (y + b));
+                if (diff < 0) {
+                    if (x2 > x1) { let a = a + 1;}
+                    else {
+                        /**
+                        if (x2 = x1) { // incrementing b instead
+                        
+                            if (y2 > y1) {let b = b+1;}    
+                            else {let b = b-1;}
+                        
+                        }
+                        else { let a = a - 1;}
+                        */
+                        let a = a - 1;
+                    }
+                    let diff = diff + dy;
+                }
+                else {
+                    if (y2 > y1) { let b = b + 1;}
+                    else {
+                        /**
+                        if (y2 = y1) { // incrementing a instead
+                        
+                            if (x2 > x1) {let a = a+1;}    
+                            else {let a = a-1;}
+                        
+                        }
+                        else { let b = b - 1;}
+                        */
+                        let b = b - 1;
+                    }
+
+                    let b = b + 1;
+                    let diff = diff - dx;
+                }
+            }
             return;
         }
 
@@ -184,12 +265,7 @@ class Screen {
             let dy = -r;
             while (dy < (r + 1)) {
                 let halfWidth = Math.sqrt((r*r) - (dy*dy));
-                //do Output.printInt(x-halfWidth);
-                //do Output.printString(",  ");
-                //do Output.printInt(x+halfWidth);
-                //do Output.println();
                 do Screen.drawLine((x-halfWidth), (y+dy), (x+halfWidth), (y+dy));
-                //do Sys.wait(100);
                 let dy = (dy + 1);
             }
             return;
