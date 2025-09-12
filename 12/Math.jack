@@ -30,16 +30,16 @@ class Math {
             let i=0;
 
             while (i < len) 
-                    {
-                        if (i = 0) {
-                            let arr[i] = 1;
-                        }
-                        else
-                        {
-                            let arr[i] = arr[i-1] + arr[i-1];
-                        }
-                        let i=i+1;
+                {
+                    if (i = 0) {
+                        let arr[i] = 1;
                     }
+                    else
+                    {
+                        let arr[i] = arr[i-1] + arr[i-1];
+                    }
+                    let i=i+1;
+                }
             return arr;
         }
 
@@ -98,18 +98,9 @@ class Math {
             return res;
         }
         
-
+        // recursiv helper function to divide
         function int divideHelper(int x, int y) {
-            // This should be implemented without using multiplication.
-            // Hint: updating the value of 2*q*y in the "if" statement requires
-            // at most a single addition operator at every recursion step.
-            // Pseudocode:
-            // 1. if (y > x) return 0
-            // 2. let q = divide(x, 2*y)
-            // 3. if ((x - 2*q*y) < y)
-            // 4.   return 2*q
-            // 5. else
-            // 6.   return 2*q + 1
+
             var int q, mult;
             
             if ((y > x) | (y < 0)) {  
@@ -128,8 +119,8 @@ class Math {
                 if ((divHelper + y) < 0) {
                     return (0);
                 }
-                let divHelper = divHelper + y;//(y+y);// in the returned state, we will need to evaluate  2*qtag*ytag = 2*(2*q + 1)(y/2) = 2*q*y + y
-                return (q+q+1);                    // meaning temp in the current iteration, is less by 2ytag=y then the returend state
+                let divHelper = divHelper + y; // in the returned state, we will need to evaluate  2*qtag*ytag = 2*(2*q + 1)(y/2) = 2*q*y + y
+                return (q+q+1);                // meaning temp in the current iteration, is less by 2ytag=y then the returend state
             }
 
         }
@@ -148,16 +139,7 @@ class Math {
         
 
         /** Returns the integer part of the square root of x. */
-        /**
-        y = 0;
-        for j = 14 .. 0 do:
-            if (y + 2**j)**2 <= x:
-                y = y + 2**j
-            return y
 
-
-            y**2 + 4y + 2**j**2
-        */
         function int sqrt(int x) {
             var int y, ySquared, j, twoPowerJ, twoPower2J, candidate;
             

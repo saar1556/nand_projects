@@ -221,7 +221,7 @@ class Output {
         
         let base_addr = 16384 + (cursorRow * 352) + (cursorCol / 2); // 16384 + ((currentRow*11) + row)*32)+((currentCol * 8)/16
                                                                      // same as 16384 + 352*currentRow + 32*row + currentCol/2
-                                                                    // same as base_addr + shift_row; shift_row += 32;
+                                                                     // same as base_addr + shift_row; shift_row += 32;
         while (row < 11) {                                           
 
                 let address = base_addr + shift_row;
