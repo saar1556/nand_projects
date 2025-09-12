@@ -11,8 +11,6 @@
  * the screen is indexed (0,0).
  */
 class Screen {
-
-
         static boolean color;
         static Array twoToThe,sixteenMulipliers,baseAddresses; 
 
@@ -45,7 +43,6 @@ class Screen {
                 let culmative = culmative + 16;
                 let i = i+1;
             }
-
 
             let culmative = 16384;
             let i = 0;
@@ -100,6 +97,7 @@ class Screen {
         /** Draws the (x,y) pixel, using the current color. */
         function void drawPixel(int x, int y) {
             var int x_over,r,addr,value,post_value;
+            
             let x_over = x/16;
             let r = x - sixteenMulipliers[x_over];
             let addr = baseAddresses[y] + x_over;
@@ -111,17 +109,16 @@ class Screen {
             else  {
                 let post_value = value & (~twoToThe[r]);
             }
-
-            if (~(post_value = value))
-            {
-                do Memory.poke(addr,post_value); 
-            }
+            do Memory.poke(addr,post_value); 
+            
             return;
         }
 
         /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
         function void drawLine(int x1, int y1, int x2, int y2) {
             var int x, y, a, b, diff, dx, dy, wordStart, wordEnd, i, address;
+            var int addA,addB;
+            
             let x = x1;
             let y = y1;
             let a = 0;
@@ -129,10 +126,16 @@ class Screen {
             let dx = Math.abs(x1 - x2);
             let dy = Math.abs(y1 - y2);
 
-        /**            
+            if (x2 > x1) {let addA = 1;}
+            else {let addA = -1;}
+
+            if (y2 > y1) { let addB = 1;}
+            else {let addB = -1;}
+
+
             // Case: horizontal line
             if (dy = 0) {
-                 // Compute word indices
+                // Compute word indices
                 let wordStart = Screen.shiftRight(x1, 4); // x1 / 16
                 let wordEnd = Screen.shiftRight(x2, 4);   // x2 / 16
 
@@ -193,47 +196,21 @@ class Screen {
                     let diff = diff - dx;
                 }
             }
-            return; */
-            
-            //if ((x1 = x2) & (y1 = y2)) {do Screen.drawPixel(x1,y1); return;}
+            //return; 
 
+                    
             while ((Math.abs(a) < (dx + 1)) & (Math.abs(b) < (dy + 1))) {
                 do Screen.drawPixel((x + a), (y + b));
                 if (diff < 0) {
-                    if (x2 > x1) { let a = a + 1;}
-                    else {
-                        /**
-                        if (x2 = x1) { // incrementing b instead
-                        
-                            if (y2 > y1) {let b = b+1;}    
-                            else {let b = b-1;}
-                        
-                        }
-                        else { let a = a - 1;}
-                        */
-                        let a = a - 1;
-                    }
+                    let a = a + 1;
                     let diff = diff + dy;
                 }
                 else {
-                    if (y2 > y1) { let b = b + 1;}
-                    else {
-                        /**
-                        if (y2 = y1) { // incrementing a instead
-                        
-                            if (x2 > x1) {let a = a+1;}    
-                            else {let a = a-1;}
-                        
-                        }
-                        else { let b = b - 1;}
-                        */
-                        let b = b - 1;
-                    }
-
                     let b = b + 1;
                     let diff = diff - dx;
                 }
             }
+
             return;
         }
 
