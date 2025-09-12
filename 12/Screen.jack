@@ -12,14 +12,94 @@
  */
 class Screen {
 
-        static boolean color;
+    static boolean color;
+    static Array twoToThe; 
+    static Array rowBase;   // 256 entries: base RAM addr for each y row
+    static Array maskSet;   // 16 entries:  1<<b
+    static Array maskClr;   // 16 entries: ~maskSet[b]
+
+    function void init() {
+        var int i, base;
+
+        // --- masks ---
+        let maskSet = Array.new(16);
+        let maskClr = Array.new(16);
+        let maskSet[0] = 1;
+        let i = 1;
+        while (i < 16) {
+            let maskSet[i] = maskSet[i-1] + maskSet[i-1]; // double = <<1
+            let i = i + 1;
+        }
+        let i = 0;
+        while (i < 16) {
+            let maskClr[i] = ~maskSet[i];  // 16-bit NOT in Hack
+            let i = i + 1;
+        }
+
+        // --- row bases: 16384 + y*32 (computed with plain adds) ---
+        let rowBase = Array.new(256);
+        let base = 16384;
+        let i = 0;
+        while (i < 256) {
+            let rowBase[i] = base;
+            let base = base + 32;  // next row is +32 words
+            let i = i + 1;
+        }
+        do Screen.clearScreen();
+        let color = true;
+        return;
+    }
+
+
+    /** Draws pixel (x,y) with the current color (0/1 in the 'color' var). */
+    function void drawPixel(int x, int y) {
+        var int addr, val, bit, m;
+
+        // addr = rowBase[y] + x/16   (only one divide per pixel)
+        let addr = rowBase[y] + (x / 16);
+        let val  = Memory.peek(addr);
+
+        // bit inside the 16-pixel word
+        let bit = x & 15;        // x % 16
+        let m   = maskSet[bit];
+
+        if (color) {
+            // only poke if the bit is currently 0
+            if ((val & m) = 0) {
+                do Memory.poke(addr, val | m);
+            }
+        } else {
+            // only poke if the bit is currently 1
+            if ((val & m) = m) {
+                do Memory.poke(addr, val & maskClr[bit]);
+            }
+        }
+        return;
+    }
 
         /** Initializes the Screen. */
-        function void init() {
+        /**function void init() {
+            var int i,len;
+
+            let len=16;
+            let twoToThe = Array.new(len);
+            let i=0;
+
+            while (i < len) 
+                {
+                    if (i = 0) {
+                        let twoToThe[i] = 1;
+                    }
+                    else
+                    {
+                        let twoToThe[i] = twoToThe[i-1] + twoToThe[i-1];
+                    }
+                    let i=i+1;
+                }
             do Screen.clearScreen();
             let color = true;
             return;
-        }
+        }*/
 
         /** Erases the entire screen. */
         function void clearScreen() {
@@ -43,7 +123,7 @@ class Screen {
             var int i;
             let i = 0;
             while (i < shiftAmount) {
-                let value =  ^value;
+                let value = ^value;
                 let i = i + 1;
             }
             return value;
@@ -60,7 +140,7 @@ class Screen {
         }
 
         /** Draws the (x,y) pixel, using the current color. */
-        function void drawPixel(int x, int y) {
+        /**function void drawPixel(int x, int y) {
             var int y32, xDev16, address, addressVal, xMod16;
             let xDev16 = Screen.shiftRight(x, 4);
             let y32 = Screen.shiftLeft(y, 5);
@@ -77,6 +157,80 @@ class Screen {
             }
             do Memory.poke(address, addressVal);
             return;
+        }*/
+
+        /** Draws the (x,y) pixel, using the current color. */
+        /**function void drawPixel(int x, int y) {
+            // For this function, you will need to calculate the value x%16.
+            // It should be calculated quickly without using multiplication or
+            // division, using exactly one basic math/logical operation.
+            // In addition, calculating 16384 + y * 32 + x/16 should not use
+            // division or multiplication.
+            // Pseudocode:
+            // 1. Compute the RAM address where the (x,y) pixel is
+            //    represented: 16384 + (32*y) + (x/16).
+            // 2. Use Memory.peek to get the 16-bit value of this address
+            // 3. Use some bitwise operation to set (only) the bit that corresponds
+            //    to the pixel to the current color.
+            // 4. Use Memory.poke to write the modified 16-bit value to the RAM
+            // address.
+            var int address,r, value;
+            var Array bits;
+
+            let address = 32*y + (x/16);
+            let value = Memory.peek((16384+address));
+            
+            // setting new value
+            let bits = Screen.decimalToBin(value);
+            let r = x - ((x/16)*16);
+            let bits[r] = color;
+            let value = Screen.binToDecimal(bits);
+            do Memory.deAlloc(bits);
+
+            //let value[r] = currentColor;
+            do Memory.poke(address,value);
+            return;
+
+        }*/
+
+        function Array decimalToBin(int x) {
+            var int i;
+            var Array bits;
+
+            let bits = Array.new(16);
+            let i = 15;
+
+            while (i > -1) {
+                if (x > twoToThe[i])
+                    {
+                        let bits[i] = true;
+                        let x = x - twoToThe[i];
+                    }
+                else
+                {
+                    let bits[i] = false;
+                }
+                let i = i-1;
+            }
+
+            return bits;
+        }
+
+        function int binToDecimal(Array bits) {
+            var int i,new_val;
+            
+            let i=0;
+            let new_val = 0;
+
+            while (i<16) {
+                if (bits[i]) {
+                    let new_val = twoToThe[i] + new_val;
+                }
+                //let twoToThe[i] = twoToThe*2;
+                let i = i+1;
+            }
+
+            return new_val;
         }
 
         /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */

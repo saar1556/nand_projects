@@ -71,7 +71,7 @@ class String {
         let val = 0;
         let i = 0;
         while (i < length) {
-            let d = str.charAt(i) - 48; // '0' = 48
+            let d = str[i] - 48; // '0' = 48
             if ((d < 0) | (d > 9)) {
                 return val; // non-digit char
             }
