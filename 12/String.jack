@@ -72,8 +72,9 @@ class String {
         let i = 0;
         while (i < length) {
             let d = str[i] - 48; // '0' = 48
+            // non-digit char:
             if ((d < 0) | (d > 9)) {
-                return val; // non-digit char
+                return val; 
             }
             let val = (val * 10) + d;
             let i = i + 1;
@@ -84,7 +85,7 @@ class String {
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
         var int lastDigit, c, i, temp;
-        let lastDigit = val - ((val / 10)*10);
+        let lastDigit = val - ((val / 10) * 10);
         let c = lastDigit + 48; // '0' = 48
         if (val < 10) {
             do setCharAt(0, c);
