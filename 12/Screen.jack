@@ -11,48 +11,44 @@
  * the screen is indexed (0,0).
  */
 class Screen {
+
+        // Static fields:
         static boolean color;
-        static Array twoToThe,sixteenMulipliers,baseAddresses, sixteenDivisier, half; 
+        static Array twoToThe,sixteenMulipliers,baseAddresses, sixteenDivisier; 
 
         /** Initializes the Screen. */
         function void init() {
-            var int i, len;
-
-            let len=16;
-            let twoToThe = Array.new(len);
-            let i=0;
-
-            while (i < len) 
-                {
-                    if (i = 0) {
-                        let twoToThe[i] = 1;
-                    }
-                    else
-                    {
-                        let twoToThe[i] = twoToThe[i-1] + twoToThe[i-1];
-                    }
-                    let i=i+1;
-                }
             do Screen.clearScreen();
             do Screen.initArrays();
             let color = true;
             return;
         }
 
+        
+        // Initializes lookup arrays
         function void initArrays() {
             var int i, culmative, value, counter;
 
-            let twoToThe = Array.new(16);
-            let sixteenMulipliers = Array.new(32);
-            let baseAddresses = Array.new(256);
+            // NOTE: Arrays are used for fast computation of pixel positions
+            let twoToThe = Array.new(16);          // Powers of 2 for pixel bit masks
+            let sixteenMulipliers = Array.new(32); // Precomputed multiples of 16
+            let baseAddresses = Array.new(256);    // Base RAM addresses for each row
+            let sixteenDivisier = Array.new(516);  // Precomputed divisions of 16
 
+            // Fill twoToThe array
             let i = 0;
-            while (i < 16) {
-                if (i = 0) {let twoToThe[i] = 1;}
-                else {let twoToThe[i] = twoToThe[i-1] + twoToThe[i-1];}
-                let i = i+1;
-            }
+            while (i < 16) 
+                {
+                    if (i = 0) {
+                        let twoToThe[i] = 1;
+                    }
+                    else {
+                        let twoToThe[i] = twoToThe[i-1] + twoToThe[i-1];
+                    }
+                    let i=i+1;
+                }
 
+            // Fill sixteenMulipliers array: 0,16,32,...,496
             let culmative = 0;
             let i = 0;
             while (i<32) {
@@ -61,6 +57,7 @@ class Screen {
                 let i = i+1;
             }
 
+            // Fill baseAddresses array: 16384, 16384+32, ..., for 256 rows
             let culmative = 16384;
             let i = 0;
             while (i < 256) {
@@ -69,7 +66,7 @@ class Screen {
                 let i = i+1;
             }
 
-            let sixteenDivisier = Array.new(516);
+            // Fill sixteenDivisier array: repeated sequence for x/16 lookup
             let counter = 0;
             let i = 0;
             let value = 0;
@@ -84,22 +81,6 @@ class Screen {
                 }
             }
 
-            let half = Array.new(32);
-            let value = 0;
-            let counter = 0;
-            let i = 0;
-
-            while (i < 32) {
-                let half[i] = value;
-                let i = i + 1;
-
-                let counter = counter + 1;
-                if (counter = 2) {
-                    let counter = 0;
-                    let value = value + 1;
-                }
-            }
-
             return;
         }
 
@@ -109,10 +90,7 @@ class Screen {
             var int i;
             let i = 0;
             while (i < 8192) { // 256 rows * 512 bits / 16 = 8192 words
-                do Output.moveCursor(10, 10);
-                do Output.printString("etsrt");
-                do Sys.wait(50);
-                do Memory.poke(16384 + i, -1); // clear all words
+                do Memory.poke(16384 + i, 0); // clear all words
                 let i = i + 1;
             }
             return;
@@ -125,31 +103,13 @@ class Screen {
             return;
         }
 
-        function int shiftLeft(int value, int shiftAmount) {
-            var int i;
-            let i = 0;
-            while (i < shiftAmount) {
-                let value = ^value;
-                let i = i + 1;
-            }
-            return value;
-        }
-
-        function int shiftRight(int value, int shiftAmount) {
-            var int i;
-            let i = 0;
-            while (i < shiftAmount) {
-                let value = #value;
-                let i = i + 1;
-            }
-            return value;
-        }
 
         /** Draws the (x,y) pixel, using the current color. */
         function void drawPixel(int x, int y) {
             var int x_over,r,addr,value,post_value;
             
-            let x_over = x/16;
+            // Compute 16-bit word index and pixel offset
+            let x_over = sixteenDivisier[x];
             let r = x - sixteenMulipliers[x_over];
             let addr = baseAddresses[y] + x_over;
 
@@ -165,60 +125,49 @@ class Screen {
             return;
         }
 
-        /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
+        /** Draws a line from (x1,y1) to (x2,y2) using current color. */
         function void drawLine(int x1, int y1, int x2, int y2) {
-            var int x, y, a, b, diff, dx, dy, wordStart, wordEnd, i, address;
-            var int addA,addB, y1Div16, y1Div32;
-            
-            let x = x1;
-            let y = y1;
-            let a = 0;
-            let diff = 0;
-            let dx = Math.abs(x1 - x2);
-            let dy = Math.abs(y1 - y2);
+            var int dx, dy, sx, sy, err, e2;
+            var int wStart, wEnd, i, addr, t;
 
-            if (x2 > x1) {let addA = 1;}
-            else {let addA = -1;}
+            // -------------------------
+            // Horizontal line (y1 == y2)
+            // -------------------------
+            if (y1 = y2) {
+                // normalize order so x1 <= x2
+                if (x2 < x1) { let t = x1; let x1 = x2; let x2 = t; }
 
-            if (y2 > y1) { let addB = 1;}
-            else {let addB = -1;}
+                let wStart = sixteenDivisier[x1];  // x1 / 16 (lookup)
+                let wEnd   = sixteenDivisier[x2];  // x2 / 16 (lookup)
 
-            // Case: horizontal line
-            if (dy = 0) {
-                // Compute word indices
-                let wordStart = sixteenDivisier[x1]; // x1 / 16
-                let wordEnd = sixteenDivisier[x2];   // x2 / 16
-
-                // Same word — draw pixel by pixel
-                if (wordStart = wordEnd) {
+                if (wStart = wEnd) {
+                    // same 16-pixel word → draw pixels
                     let i = x1;
                     while (i < (x2 + 1)) {
                         do Screen.drawPixel(i, y1);
                         let i = i + 1;
                     }
-                return;
+                    return;
                 }
-                // First partial word
+
+                // left partial word
                 let i = x1;
-                while (i < sixteenDivisier[wordStart + 1]) {
+                while (i < sixteenMulipliers[wStart + 1]) {
                     do Screen.drawPixel(i, y1);
                     let i = i + 1;
                 }
-                // Full words — draw entire 16-bit values
-                let i = wordStart + 1;
-                while (i < wordEnd) {
-                    let y1Div16 = sixteenDivisier[y1];
-                    let y1Div32 = half[y1Div16];
-                    let address = (16384 + y1Div32 + i);
-                    if (color) {
-                        do Memory.poke(address, -1); // 0xFFFF
-                    } else {
-                        do Memory.poke(address, 0); // 0x0000
-                    }
+
+                // full words
+                let i = wStart + 1;
+                while (i < wEnd) {
+                    let addr = baseAddresses[y1] + i;
+                    if (color) { do Memory.poke(addr, -1); }  // 0xFFFF
+                    else       { do Memory.poke(addr, 0);   } // 0x0000
                     let i = i + 1;
                 }
-                // Last partial word
-                let i = sixteenDivisier[wordEnd];
+
+                // right partial word
+                let i = sixteenMulipliers[wEnd];
                 while (i < (x2 + 1)) {
                     do Screen.drawPixel(i, y1);
                     let i = i + 1;
@@ -226,8 +175,12 @@ class Screen {
                 return;
             }
 
-            // Case: vertical line
-            if (dx = 0) {
+            // -------------------------
+            // Vertical line (x1 == x2)
+            // -------------------------
+            if (x1 = x2) {
+                // normalize order so y1 <= y2
+                if (y2 < y1) { let t = y1; let y1 = y2; let y2 = t; }
                 let i = y1;
                 while (i < (y2 + 1)) {
                     do Screen.drawPixel(x1, i);
@@ -236,35 +189,36 @@ class Screen {
                 return;
             }
 
-            // General case: diagonal or sloped line
-            /**while ((a < (dx + 1)) & (b < (dy + 1))) {
-                do Screen.drawPixel((x + a), (y + b));
-                if (diff < 0) {
-                    let a = a + 1;
-                    let diff = diff + dy;
-                }
-                else {
-                    let b = b + 1;
-                    let diff = diff - dx;
-                }
-            }*/
-            //return; 
+            // -------------------------
+            // General case: integer Bresenham
+            // -------------------------
+            let dx = Math.abs(x2 - x1);
+            let dy = Math.abs(y2 - y1);
 
-                    
-            while ((Math.abs(a) < (dx + 1)) & (Math.abs(b) < (dy + 1))) {
-                do Screen.drawPixel((x + a), (y + b));
-                if (diff < 0) {
-                    let a = a + 1;
-                    let diff = diff + dy;
+            if (x1 < x2) { let sx = 1; } else { let sx = -1; }
+            if (y1 < y2) { let sy = 1; } else { let sy = -1; }
+
+            let err = dx - dy;
+
+            while (true) {
+                do Screen.drawPixel(x1, y1);
+
+                if ((x1 = x2) & (y1 = y2)) { return; }
+
+                let e2 = err + err;
+
+                if (e2 > (0 - dy)) {
+                    let err = err - dy;
+                    let x1 = x1 + sx;
                 }
-                else {
-                    let b = b + 1;
-                    let diff = diff - dx;
+                if (e2 < dx) {
+                    let err = err + dx;
+                    let y1 = y1 + sy;
                 }
             }
-
             return;
         }
+
 
         /** Draws a filled rectangle whose top left corner is (x1, y1)
          * and bottom right corner is (x2,y2), using the current color. */
