@@ -16,8 +16,10 @@ class Main {
     /** Draws a sample picture on the screen using lines and circles. */
     function void main() {
     
+        do Screen.clearScreen();
         do Screen.drawLine(0,220,511,220);        // base line
         do Screen.drawRectangle(280,90,410,220);  // house
+        do Screen.clearScreen();
         
         do Screen.setColor(false); 
         do Screen.drawRectangle(350,120,390,219); // door

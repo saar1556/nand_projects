@@ -31,9 +31,9 @@ pop local 0
 label WHILE_EXP0
 push local 0
 push argument 0
-lt
-push constant 200
+push constant 2
 call Math.multiply 2
+lt
 not
 if-goto WHILE_END0
 push local 0

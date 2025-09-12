@@ -112,7 +112,7 @@ class Keyboard {
          * and returns its integer value (until the first non-digit character in the
          * entered text is detected). Also handles user backspaces. 
          */
-        function int readInt(String message) {   ////////////////
+        function int readInt(String message) {
             var String input;
             var char c;
             let input = String.new(64);

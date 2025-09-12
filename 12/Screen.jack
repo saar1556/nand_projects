@@ -106,7 +106,10 @@ class Screen {
             var int i;
             let i = 0;
             while (i < 8192) { // 256 rows * 512 bits / 16 = 8192 words
-                do Memory.poke(16384 + i, 0); // clear all words
+                do Output.moveCursor(10, 10);
+                do Output.printString("etsrt");
+                do Sys.wait(50);
+                do Memory.poke(16384 + i, -1); // clear all words
                 let i = i + 1;
             }
             return;

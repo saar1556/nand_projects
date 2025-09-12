@@ -10,13 +10,38 @@
  */
 class Math {
 
+        static Array twoToThe;
         static int divHelper; // used by divide
         
         /** Initializes the library. */
         function void init() {
             let divHelper = 0;
+            let twoToThe = Math.setTwoToThe();
             return;
 
+        }
+
+        /** Initializes the library. */
+        function Array setTwoToThe() {
+            var int i,len;
+            var Array arr;
+
+            let len=16;
+            let arr = Array.new(len);
+            let i=0;
+
+            while (i < len) 
+                    {
+                        if (i = 0) {
+                            let arr[i] = 1;
+                        }
+                        else
+                        {
+                            let arr[i] = arr[i-1] + arr[i-1];
+                        }
+                        let i=i+1;
+                    }
+            return arr;
         }
 
         /** Returns the absolute value of x. */
@@ -41,10 +66,10 @@ class Math {
             let shiftedx = x;
             let i = 0;
             while (i < 16) {
-                if (~((y & Math.leftShift(1, i)) = 0)) {
+                if (~((y & twoToThe[i]) = 0)) {
                     let sum = sum + shiftedx;
                 }
-                let shiftedx = ^shiftedx;
+                let shiftedx = shiftedx+shiftedx;
                 //Math.leftShift(shiftedx, 1);
                 let i = i + 1;
             }
@@ -102,8 +127,7 @@ class Math {
                 return (q+q); // in the returned state, we will need to evaluate 2*qtag*ytag = 2*(2*q)(y/2) = 2*q*y
                               // meaning temp in the current iteration, is the same in the returend state
             }
-            else
-            {   
+            else {   
                 // overflow protect
                 if ((divHelper + y) < 0) {
                     return (0);
@@ -144,7 +168,7 @@ class Math {
             let ySquared = 0;
             let j = 8;
             while (j > -1) {
-                let twoPowerJ = Math.leftShift(1, j); // 2**j
+                let twoPowerJ = twoToThe[j]; // 2**j
                 let twoPower2J = Math.leftShift(twoPowerJ, j); // 2**(2j)
                 // y**2 + y*(2**(j+1)) + 2**(2*j)
                 let candidate = ySquared + Math.leftShift(y, j + 1) + twoPower2J;
