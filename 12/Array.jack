@@ -13,6 +13,8 @@
  */
 class Array {
     /** Constructs a new Array of the given size. */
+    field int address;
+
     function Array new(int size) {
         return Memory.alloc(size);
     }
