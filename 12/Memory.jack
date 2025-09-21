@@ -93,7 +93,6 @@ class Memory {
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
-
         let o[0] = freeList;
         let freeList = o;
         return;
@@ -102,7 +101,6 @@ class Memory {
     /** Returns the maximal element contained in the given Array/object. 
      *  Assume inputs are initialized and contain at least one element. */
     function int max(Array o) {
-
         var int max,len,i;
 
         let len = o[-1];
