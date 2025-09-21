@@ -1,0 +1,19 @@
+// comp
+push constant 30000
+push constant -20000
+gt
+
+push constant -30000
+push constant 20000
+lt
+
+push constant 12345
+push constant 12345
+eq
+
+// shift
+push constant 4
+shiftleft
+
+push constant 8
+shiftright
