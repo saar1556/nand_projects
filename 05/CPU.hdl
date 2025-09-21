@@ -53,17 +53,13 @@ CHIP CPU {
             zx=instruction[11], nx=instruction[10],
             zy=instruction[9],  ny=instruction[8],
             f=instruction[7],   no=instruction[6],
-            out=ALUout, zr=zr, ng=ng);
-
-        // Copy internal ALUout to chip OUT
-        Mux16(a=ALUout, b=ALUout, sel=false, out=outM);
+            out=outM,out=ALUout, zr=zr, ng=ng);
 
         // Jump logic
         And(a=instruction[2], b=ng, out=condLT);
         And(a=instruction[1], b=zr, out=condEQ);
-        Not(in=ng, out=notng);
-        Not(in=zr, out=notzr);
-        And(a=notng, b=notzr, out=pos);
+        Or(a=ng,b=zr,out=ngORzr);
+        Not(in=ngORzr,out=pos);
         And(a=instruction[0], b=pos, out=condGT);
 
         Or(a=condLT, b=condEQ, out=condLE);

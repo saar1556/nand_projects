@@ -51,6 +51,48 @@ class Math {
             return -x;
         }
 
+        method Array decimalToBin(int x) {
+            var int i;
+            var Array bits;
+
+            let bits = Array.new(16);
+            let i = 15;
+
+            while (i > -1) {
+                if (x > twoToThe[i])
+                    {
+                        let bits[i] = true;
+                        let x = x - twoToThe[i];
+                    }
+                else
+                {
+                    let bits[i] = false;
+                }
+                let i = i-1;
+            }
+
+            return bits;
+        }
+
+        method int binToDecimal(Array bits) {
+            var int i,new_val,twoToTheI;
+            
+            let i=0;
+            let new_val = 0;
+            let twoToTheI = 1;
+
+            while (i<16) {
+                if (bits[i]) {
+                    let new_val = twoToTheI + new_val;
+                }
+                let twoToTheI = twoToTheI*2;
+                let i = i+1;
+            }
+
+            return new_val;
+        }
+
+
         /** 
          * Returns the product of x and y. 
          * When a Jack compiler detects the multiplication operator '*' in the 

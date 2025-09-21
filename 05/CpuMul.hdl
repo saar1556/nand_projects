@@ -38,66 +38,36 @@ CHIP CpuMul {
         pc[15];          // address of next instruction
     
     PARTS:
+
     // is C-instruction?
     And(a=instruction[15], b=true, out=Ccommand);
     Not(in=Ccommand, out=Acommand);
-    
-    // recognize if shift mode: instruction[15]==1 AND instruction[14]==0
-    Not(in=instruction[14], out=not14);
-    And(a=Ccommand, b=not14, out=MulMode);
-    
-    // Value to enter A register: A-instr -> instruction ; C-instr -> ALUout
+    And(a=instruction[3], b=Ccommand, out=writeM);
+
+    // Value to enter A register:
+    // A-instr -> instruction ; C-instr -> ALUout
     Mux16(a=instruction, b=ALUout, sel=Ccommand, out=AregValue);
 
-    // A register load logic
-    And(a=instruction[5], b=Ccommand, out=writeAregular);
-    // in shift mode:
-    And(a=instruction[11], b=MulMode, out=shiftToA1); 
-    Not(in=instruction[12], out=aIs0); 
-    And(a=shiftToA1, b=aIs0, out=writeAshift);
-    Or(a=writeAregular, b=Acommand, out=loadAreg);
-    Or(a=loadAreg, b=writeAshift, out=loadA);
+    // A register load = A-instr OR (C-instr & d1)
+    And(a=instruction[5], b=Ccommand, out=writeA);
+    Or(a=writeA, b=Acommand, out=loadA);
     ARegister(in=AregValue, load=loadA, out=AregOut, out[0..14]=addressM);
 
-    // D register load logic  
-    And(a=instruction[4], b=Ccommand, out=writeDregular);
-    // in shift mode:
-    And(a=instruction[10], b=MulMode, out=shiftToD1); 
-    And(a=shiftToD1, b=aIs0, out=writeDshift);
-    Or(a=writeDregular, b=writeDshift, out=writeD);
-    DRegister(in=MandDout, load=writeD, out=x);
+    // D register load = C-instr & d2
+    And(a=instruction[4], b=Ccommand, out=writeD);
+    DRegister(in=ALUout, load=writeD, out=x);
 
-    // M write logic
-    And(a=instruction[3], b=Ccommand, out=writeMregular);
-    // in shift mode:
-    And(a=instruction[11], b=MulMode, out=shiftToM1);
-    And(a=shiftToM1, b=instruction[12], out=writeMshift);
-    Or(a=writeMregular, b=writeMshift, out=writeM);
-
-    // ALU/Extended ALU selection
+    // ALU: y = (a ? M : A), control = instr[11..6]
     Mux16(a=AregOut, b=inM, sel=instruction[12], out=y);
-    
-    ExtendAlu(x=x, y=y, instruction=instruction[6..14],
-              out=extendALUout, zr=extendZr, ng=extendNg);
-              
-    ALU(x=x, y=y,
-        zx=instruction[11], nx=instruction[10],
-        zy=instruction[9],  ny=instruction[8],
-        f=instruction[7],   no=instruction[6],
-        out=ALUout, zr=ALUzr, ng=ALUng);
-
-    // Output selection based on mode
-    Mux16(a=ALUout, b=extendALUout, sel=MulMode, out=MandDout);
-    And16(a=MandDout, b=true, out=outM);
-    Mux(a=ALUzr, b=extendZr, sel=MulMode, out=zr);
-    Mux(a=ALUng, b=extendNg, sel=MulMode, out=ng);
+    ExtendAlu(x=x, y=y,
+        instruction=instruction[6..14],
+        out=outM,out=ALUout, zr=zr, ng=ng);
 
     // Jump logic
     And(a=instruction[2], b=ng, out=condLT);
     And(a=instruction[1], b=zr, out=condEQ);
-    Not(in=ng, out=notng);
-    Not(in=zr, out=notzr);
-    And(a=notng, b=notzr, out=pos);
+    Or(a=ng,b=zr,out=ngORzr);
+    Not(in=ngORzr,out=pos);
     And(a=instruction[0], b=pos, out=condGT);
 
     Or(a=condLT, b=condEQ, out=condLE);

@@ -18,6 +18,9 @@ class String {
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
+    field Array str;
+    field int length;
+
     constructor String new(int maxLength) {
         let str = Array.new(maxLength);
         let length = 0;
