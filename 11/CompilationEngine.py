@@ -403,14 +403,14 @@ class CompilationEngine:
 
     def _jack_char_code(self, ch: str) -> int:
         # Normalize curly quotes, if needed
-        if ch in {'“', '”'}:
+        if ch in {'“', '”'}: ## no need, illegal
             ch = '"'
-        if ch == '’':
+        if ch == '’': ## no need, illegal
             ch = "'"
         c = ord(ch)
         if 32 <= c <= 126:
             return c
-        if ch == '\n':
+        if ch == '\n': ## no need, illegal
             return 128  # OS.newLine
         if ch == '\b':
             return 129  # OS.backSpace
