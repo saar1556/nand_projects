@@ -145,5 +145,4 @@ class Parser:
         """
         if self.command_type() not in {"C_PUSH", "C_POP", "C_FUNCTION", "C_CALL"}:
             raise ValueError("arg2() should be called only if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL")
-
         return int(self.current_command.split()[2].strip())

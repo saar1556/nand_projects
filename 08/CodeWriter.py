@@ -13,7 +13,12 @@ class CodeWriter:
     """Translates VM commands into Hack assembly code."""
 
     dynamic_segments = {'local':'LCL', 'argument':'ARG', 'this':'THIS', 'that':'THAT'}
-    pointer_dict = {0:'THIS', 1:'THAT'}
+
+    output_stream: typing.TextIO
+    file_name: str
+    current_function_name: str
+    comp_counter: int
+    call_counter: int
 
     def __init__(self, output_stream: typing.TextIO) -> None:
         """Initializes the CodeWriter.
@@ -45,11 +50,17 @@ class CodeWriter:
         Returns:
             str: The assembly code for the command.
         """
+        self.output_stream.write(f"// {command} operation\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("AM=M-1\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
         if command == 'add':
-            return "M=M+D\n"
+            self.output_stream.write("M=M+D\n")
         else:
-            return "M=M-D\n"
-            
+            self.output_stream.write("M=M-D\n")
+
     def write_compare(self, command: str) -> str:
         """Generates Hack assembly code for comparison commands (eq, gt, lt).
 
@@ -67,26 +78,29 @@ class CodeWriter:
             jump = 'JEQ'
         elif command == 'gt':
             jump = 'JGT'
-        elif command == 'lt':
+        else: # command == 'lt'
             jump = 'JLT'
-        
-        output = "D=M-D\n"
-        output += f"@{command.upper()}_{self.comp_counter}\n"
-        output += f"D;{jump}\n"
-        output += f"(NOT_{command.upper()}_{self.comp_counter})\n"
-        output += "@SP\n"
-        output += "A=M\n"
-        output += "M=0\n"
-        output += f"@{command.upper()}_{self.comp_counter}_END\n"
-        output += "0;JMP\n"
-        output += f"({command.upper()}_{self.comp_counter})\n"
-        output += "@SP\n"
-        output += "A=M\n"
-        output += "M=-1\n"
-        output += f"({command.upper()}_{self.comp_counter}_END)\n"
+        self.output_stream.write(f"// {command} operation\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("AM=M-1\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
+        self.output_stream.write("D=M-D\n")
+        self.output_stream.write(f"@{command.upper()}_{self.comp_counter}\n")
+        self.output_stream.write(f"D;{jump}\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
+        self.output_stream.write("M=0\n")
+        self.output_stream.write(f"@{command.upper()}_{self.comp_counter}_END\n")
+        self.output_stream.write("0;JMP\n")
+        self.output_stream.write(f"({command.upper()}_{self.comp_counter})\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
+        self.output_stream.write("M=-1\n")
+        self.output_stream.write(f"({command.upper()}_{self.comp_counter}_END)\n")
         
         self.comp_counter += 1
-        return output
 
     def write_and_or(self, command: str) -> str:
         """Generates Hack assembly code for the bitwise and or or commands.
@@ -97,12 +111,18 @@ class CodeWriter:
         Returns:
             str: The assembly code for the command.
         """
+        self.output_stream.write(f"// {command} operation\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("AM=M-1\n")
+        self.output_stream.write("D=M\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
         if command == 'and':
-            return "M=M&D\n"
+            self.output_stream.write("M=M&D\n")
         else:
-            return "M=M|D\n"
+            self.output_stream.write("M=M|D\n")
 
-    def write_not_neg(self, command: str) -> str:
+    def write_not_neg_shift(self, command: str) -> str:
         """Generates Hack assembly code for the unary not or neg commands.
 
         Args:
@@ -111,10 +131,19 @@ class CodeWriter:
         Returns:
             str: The assembly code for the command.
         """
+        
+        self.output_stream.write(f"// {command} operation\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("A=M-1\n")
         if command == 'not':
-            return "M=!M\n"
-        else:
-            return "M=-M\n"
+            self.output_stream.write("M=!M\n")
+        elif command == 'neg':
+            self.output_stream.write("M=-M\n")
+        elif command == 'shiftleft':
+            self.output_stream.write("M=M<<\n")
+        else: # command == 'shiftright'
+            self.output_stream.write("M=M>>\n")
+
 
     def write_arithmetic(self, command: str) -> None:
         """Writes assembly code that is the translation of the given 
@@ -125,90 +154,17 @@ class CodeWriter:
         Args:
             command (str): an arithmetic command.
         """
-
-        self.output_stream.write("@SP\n")
-        if command in {'not', 'neg'}:
-            self.output_stream.write("A=M-1\n")
-            self.output_stream.write(self.write_not_neg(command))
-            return
-        self.output_stream.write("AM=M-1\n")
-        self.output_stream.write("D=M\n")
-        self.output_stream.write("@SP\n")
-        self.output_stream.write("AM=M-1\n")
-
-        if command in {'add', 'sub'}:
-            self.output_stream.write(self.write_add_sub(command))
+        if command in {'not', 'neg', 'shiftleft', 'shiftright'}:
+            self.write_not_neg_shift(command)
+        elif command in {'add', 'sub'}:
+            self.write_add_sub(command)
         elif command in {'eq', 'gt', 'lt'}:
-            self.output_stream.write(self.write_compare(command))
+            self.write_compare(command)
         elif command in {'and', 'or'}:
-            self.output_stream.write(self.write_and_or(command))
-        self.output_stream.write("@SP\n")
-        self.output_stream.write("M=M+1\n")
+            self.write_and_or(command)
+        else:
+            raise ValueError(f"Invalid arithmetic command: {command}\n")
         
-    def write_push_pop_prefix(self, segment: str, index: int, is_pop: bool) -> str:
-        """Generates the Hack assembly code for address calculation in push/pop commands.
-
-        This function calculates the correct memory address based on the segment and index. 
-        It handles all memory segments including dynamic, static, pointer, temp, and constant.
-
-        Args:
-            segment (str): The name of the memory segment (e.g., 'local', 'static', 'temp').
-            index (int): The index within the memory segment.
-            is_pop (bool): A flag indicating if the operation is a 'pop'.
-
-        Returns:
-            str: A string containing the assembly code to set up the address.
-        """
-        output = ""
-
-        if segment == 'constant':
-            output += f"@{index}\n"
-            if not is_pop:
-                output += "D=A\n"
-
-        elif segment == 'static':
-            static_var = f"{os.path.splitext(self.file_name)[0]}.{index}"
-
-            output += f"@{static_var}\n"
-            if not is_pop:
-                output += "D=M\n"
-            else:
-                output += "D=A\n"
-                output += "@R13\n"
-                output += "M=D\n"
-
-        elif segment in self.dynamic_segments:
-            output += f"@{self.dynamic_segments[segment]}\n"
-            output += "D=M\n"
-            output += f"@{index}\n"
-            output += "A=D+A\n"
-            if is_pop:
-                output += "D=A\n"
-                output += "@R13\n" 
-                output += "M=D\n" 
-            else:
-                output += "D=M\n"
-
-        elif segment == 'pointer':
-            output += (f"@{self.pointer_dict[index]}\n")
-            if not is_pop:
-                output += ("D=M\n")
-            else:
-                output += "D=A\n"
-                output += "@R13\n" 
-                output += "M=D\n"
-        
-        elif segment == 'temp':
-            output += f"@{5 + index}\n"
-            if not is_pop:
-                output += "D=M\n"
-            else:
-                output += "D=A\n"
-                output += "@R13\n"
-                output += "M=D\n"
-        
-        return output
-
     def write_push(self, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the push command.
 
@@ -219,14 +175,41 @@ class CodeWriter:
             segment (str): the memory segment to push from.
             index (int): the index in the memory segment.
         """
-        address = self.write_push_pop_prefix(segment, index, is_pop=False)
-        self.output_stream.write(address)
+        self.output_stream.write("// push operation\n")
+        if segment == 'constant':
+            self.output_stream.write(f"@{index}\n")
+            self.output_stream.write("D=A\n")
+
+        elif segment == 'static':
+            self.output_stream.write(f"@{self.file_name}.{index}\n")
+            self.output_stream.write("D=M\n")
+
+        elif segment in self.dynamic_segments:
+            self.output_stream.write(f"@{self.dynamic_segments[segment]}\n")
+            self.output_stream.write("D=M\n")
+            self.output_stream.write(f"@{index}\n")
+            self.output_stream.write("A=D+A\n")
+            self.output_stream.write("D=M\n")
+
+        elif segment == 'pointer':
+            # pointer 0 -> THIS (RAM[3]), pointer 1 -> THAT (RAM[4])
+            self.output_stream.write(f"@{3 + index}\n")
+            self.output_stream.write("D=M\n")
+        
+        elif segment == 'temp':
+            self.output_stream.write(f"@{5 + index}\n")
+            self.output_stream.write("D=M\n")
+
+        else:
+            raise ValueError(f"Invalid segment '{segment}' in push command")
+        
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M\n")
         self.output_stream.write("M=D\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("M=M+1\n")
 
+    
     def write_pop(self, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the pop command.
 
@@ -237,14 +220,42 @@ class CodeWriter:
             segment (str): the memory segment to pop to.
             index (int): the index in the memory segment.
         """
-        address = (self.write_push_pop_prefix(segment, index, is_pop=True))
-        self.output_stream.write(address)
+        self.output_stream.write("// pop operation\n")
+        if segment == 'static':
+            self.output_stream.write(f"@{self.file_name}.{index}\n")
+            self.output_stream.write("D=A\n")
+
+        elif segment in self.dynamic_segments:
+            self.output_stream.write(f"@{self.dynamic_segments[segment]}\n")
+            self.output_stream.write("D=M\n")
+            self.output_stream.write(f"@{index}\n")
+            self.output_stream.write("D=D+A\n")
+
+        elif segment == 'pointer':
+            self.output_stream.write(f"@{3 + index}\n")
+            self.output_stream.write("D=A\n")
+        
+        elif segment == 'temp':
+            self.output_stream.write(f"@{5 + index}\n")
+            self.output_stream.write("D=A\n")
+
+        else:
+            raise ValueError(f"Invalid segment '{segment}' in pop command")
+
+        # Store target address in R13:
+        self.output_stream.write("@R13\n")
+        self.output_stream.write("M=D\n")
+
+        # Pop stack into D:
         self.output_stream.write("@SP\n")
         self.output_stream.write("AM=M-1\n")
         self.output_stream.write("D=M\n")
+
+        # Write D into *R13:
         self.output_stream.write("@R13\n")
         self.output_stream.write("A=M\n")
         self.output_stream.write("M=D\n")
+
 
     def write_push_pop(self, command: str, segment: str, index: int) -> None:
         """Writes assembly code that is the translation of the given 
@@ -278,16 +289,20 @@ class CodeWriter:
         else:
             self.output_stream.write(f"({self.file_name}${label})\n")
     
+
+    ###### what if not self.current_function_name??? ######
     def write_goto(self, label: str) -> None:
         """Writes assembly code that affects the goto command.
 
         Args:
             label (str): the label to go to.
         """
+        self.output_stream.write("// goto operation\n")
         if self.current_function_name:
-            self.output_stream.write(f"@{self.current_function_name}${label}\n")
+            perfix = self.current_function_name
         else:
-            self.output_stream.write(f"@{self.file_name}${label}\n")
+            perfix = self.file_name
+        self.output_stream.write(f"@{perfix}${label}\n")
         self.output_stream.write("0;JMP\n")
     
     def write_if(self, label: str) -> None:
@@ -296,15 +311,16 @@ class CodeWriter:
         Args:
             label (str): the label to go to.
         """
+        self.output_stream.write("// if-goto operation\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("AM=M-1\n")
         self.output_stream.write("D=M\n")
         if self.current_function_name:
-            self.output_stream.write(f"@{self.current_function_name}${label}\n")
+            perfix = self.current_function_name
         else:
-            self.output_stream.write(f"@{self.file_name}${label}\n")
+            perfix = self.file_name
+        self.output_stream.write(f"@{perfix}${label}\n")
         self.output_stream.write("D;JNE\n")
-        
     
     def write_function(self, function_name: str, n_vars: int) -> None:
         """Writes assembly code that affects the function command. 
@@ -318,7 +334,6 @@ class CodeWriter:
             function_name (str): the name of the function.
             n_vars (int): the number of local variables of the function.
         """
-
         self.current_function_name = function_name
 
         # (function_name)
@@ -328,7 +343,6 @@ class CodeWriter:
         for _ in range(n_vars):
             self.write_push("constant", 0)
     
-
     def write_call(self, function_name: str, n_args: int) -> None:
         """Writes assembly code that affects the call command. 
         Let "Xxx.foo" be a function within the file Xxx.vm.
@@ -345,7 +359,10 @@ class CodeWriter:
             function_name (str): the name of the function to call.
             n_args (int): the number of arguments of the function.
         """
-        # push return_address
+        self.output_stream.write("// call operation\n")
+
+         # push return_address
+        self.output_stream.write("// push return_address\n")
         self.output_stream.write(f"@{function_name}$ret.{self.call_counter}\n")
         self.output_stream.write("D=A\n")
         self.output_stream.write("@SP\n")
@@ -355,6 +372,7 @@ class CodeWriter:
         self.output_stream.write("M=M+1\n")
 
         # push LCL, ARG, THIS, THAT
+        self.output_stream.write("// push LCL, ARG, THIS, THAT\n")
         for arg in ["LCL", "ARG", "THIS", "THAT"]:
             self.output_stream.write(f"@{arg}\n")
             self.output_stream.write("D=M\n")
@@ -365,6 +383,7 @@ class CodeWriter:
             self.output_stream.write("M=M+1\n")
 
         # ARG = SP-5-n_args
+        self.output_stream.write("// ARG = SP-5-n_args\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("D=M\n")
         self.output_stream.write(f"@{n_args+5}\n")
@@ -373,12 +392,14 @@ class CodeWriter:
         self.output_stream.write("M=D\n")
 
         # LCL = SP
+        self.output_stream.write("// LCL = SP\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("D=M\n")
         self.output_stream.write("@LCL\n")
         self.output_stream.write("M=D\n")
 
         # goto function_name
+        self.output_stream.write("// goto function_name\n")
         self.output_stream.write(f"@{function_name}\n")
         self.output_stream.write("0;JMP\n")
 
@@ -387,18 +408,20 @@ class CodeWriter:
 
         self.call_counter += 1
         return
-
     
     def write_return(self) -> None:
         """Writes assembly code that affects the return command."""
-
+        self.output_stream.write("// return operation\n")
+        
         # frame = LCL 
+        self.output_stream.write("// frame = LCL\n")
         self.output_stream.write("@LCL\n")
         self.output_stream.write("D=M\n")
         self.output_stream.write("@R13\n") 
         self.output_stream.write("M=D\n")
         
         # return_address = *(frame-5)
+        self.output_stream.write("// return_address = *(frame-5)\n")
         self.output_stream.write("@R13\n") 
         self.output_stream.write("D=M\n")
         self.output_stream.write("@5\n")
@@ -408,6 +431,7 @@ class CodeWriter:
         self.output_stream.write("M=D\n")
 
         # *ARG = pop()
+        self.output_stream.write("// *ARG = pop()\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("AM=M-1\n")
         self.output_stream.write("D=M\n")
@@ -416,12 +440,14 @@ class CodeWriter:
         self.output_stream.write("M=D\n")
 
         # SP = ARG + 1
+        self.output_stream.write("// SP = ARG + 1\n")
         self.output_stream.write("@ARG\n")
         self.output_stream.write("D=M+1\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("M=D\n")
 
         # THAT = *(frame-1), THIS = *(frame-2), ARG = *(frame-3), LCL = *(frame-4)
+        self.output_stream.write("// THAT = *(frame-1), THIS = *(frame-2), ARG = *(frame-3), LCL = *(frame-4)\n")
         for address, val in [("THAT",1), ("THIS",2), ("ARG",3), ("LCL",4)]:
             self.output_stream.write("@R13\n")
             self.output_stream.write("D=M\n")
@@ -432,6 +458,7 @@ class CodeWriter:
             self.output_stream.write("M=D\n")
 
         # goto return_address
+        self.output_stream.write("// goto return_address\n")
         self.output_stream.write("@R14\n")
         self.output_stream.write("A=M\n")
         self.output_stream.write("0;JMP\n")
