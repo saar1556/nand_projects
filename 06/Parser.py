@@ -84,9 +84,9 @@ class Parser:
             str: the symbol or decimal of the current command.
         """
         if self.command_type() == "A_COMMAND":
-            return self.current_command[1:]
+            return self.current_command[1:].strip()
         elif self.command_type() == "L_COMMAND":
-            return self.current_command[1:-1]
+            return self.current_command[1:-1].strip()
         else:
             raise ValueError("symbol() should only be called for A_COMMAND or L_COMMAND")
 
@@ -98,7 +98,10 @@ class Parser:
         """
         if self.command_type() != "C_COMMAND":
             raise ValueError("dest() should only be called for C_COMMAND")
-        return self.current_command.split('=', 1)[0].strip() if '=' in self.current_command else 'null'
+        if '=' in self.current_command:
+            dest_str = self.current_command.split('=', 1)[0].strip()
+            return dest_str.replace(" ", "")
+        return 'null'
 
     def comp(self) -> str:
         """Returns the comp mnemonic in the current C-command.
@@ -115,9 +118,11 @@ class Parser:
             comp_part = self.current_command
 
         if '=' in comp_part:
-            return comp_part.split('=', 1)[1].strip()
+            comp_str = comp_part.split('=', 1)[1].strip()
         else:
-            return comp_part.strip()
+            comp_str = comp_part.strip()
+
+        return comp_str.replace(" ", "")
 
     def jump(self) -> str:
         """Returns the jump mnemonic in the current C-command.
@@ -127,4 +132,7 @@ class Parser:
         """
         if self.command_type() != "C_COMMAND":
             raise ValueError("jump() should only be called for C_COMMAND")
-        return self.current_command.split(';', 1)[1].strip() if ';' in self.current_command else 'null'
+        if ';' in self.current_command:
+            jump_str = self.current_command.split(';', 1)[1].strip()
+            return jump_str.replace(" ", "")
+        return 'null'

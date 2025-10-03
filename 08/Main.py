@@ -12,30 +12,6 @@ from Parser import Parser
 from CodeWriter import CodeWriter
 
 
-def should_bootstrap(files_to_translate):
-    """Check if bootstrap code is needed.
-    Bootstrap is needed ONLY when translating multiple VM files,
-    which represents a complete program that must have Sys.init.
-
-    Single VM file (even in a directory) = function test, no bootstrap.
-    Multiple VM files = full program, need bootstrap.
-
-    Args:
-        files_to_translate: list of file paths to check
-        
-    Returns:
-        bool: True if multiple VM files, False if single VM file
-    """
-    # Count how many VM files we have
-    vm_file_count = 0
-    for input_path in files_to_translate:
-        filename, extension = os.path.splitext(input_path)
-        if extension.lower() == ".vm":
-            vm_file_count += 1
-
-    # Bootstrap only if we have MORE than one VM file
-    return vm_file_count > 1
-
 def translate_file(
         input_file: typing.TextIO, output_file: typing.TextIO,
         bootstrap: bool) -> None:
@@ -121,7 +97,7 @@ if "__main__" == __name__:
         files_to_translate = [argument_path]
         output_path, extension = os.path.splitext(argument_path)
     output_path += ".asm"
-    bootstrap = should_bootstrap(files_to_translate)
+    bootstrap = True
     with open(output_path, 'w') as output_file:
         for input_path in files_to_translate:
             filename, extension = os.path.splitext(input_path)
