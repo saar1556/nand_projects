@@ -229,7 +229,6 @@ class Output {
                     let value1 = Memory.peek(address);
                     let value2 = Output.shiftLeft(map[row],8);
                     do Memory.poke(address, (value1+value2));  
-                    
                 }
                 else { 
                     do Memory.poke(address, map[row]);      
@@ -241,9 +240,7 @@ class Output {
 
         let cursorCol = cursorCol + 1;
 
-        if (cursorCol = (LAST_COL+1)) {
-            do Output.println();
-        }
+        if (cursorCol = (LAST_COL+1)) {do Output.println();}
         return; 
     }
 
@@ -300,8 +297,6 @@ class Output {
             }
         }            
         do Output.moveCursor(cursorRow, cursorCol);
-        do Output.printChar(" ");       
-        let cursorCol = cursorCol - 1;  
         return;
     }
 
