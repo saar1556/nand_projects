@@ -126,7 +126,7 @@ class Keyboard {
             
             return input.intValue();
         */
-        let input = readLine(message);
+        let input = Keyboard.readLine(message);
         return input.intValue();
         }
         
