@@ -14,22 +14,26 @@
 class String {
 
     field int length; // current length of the string
+    field int MaxLength;
     field Array str; // array of characters
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
-    field Array str;
-    field int length;
-
     constructor String new(int maxLength) {
-        let str = Array.new(maxLength);
         let length = 0;
+        let MaxLength = maxLength;
+        if (maxLength = 0) {
+            return this;
+        }
+        let str = Array.new(maxLength);
         return this;
     }
 
     /** Disposes this string. */
     method void dispose() {
-        do str.dispose();
+        if (MaxLength > 0) {
+            do str.dispose();
+        }
         return;
     }
 
