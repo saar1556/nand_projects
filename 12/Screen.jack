@@ -103,6 +103,10 @@ class Screen {
             return;
         }
 
+        function boolean getColor() {
+            return color;
+        }
+
 
         /** Draws the (x,y) pixel, using the current color. */
         function void drawPixel(int x, int y) {

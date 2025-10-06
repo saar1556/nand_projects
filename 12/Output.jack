@@ -316,7 +316,6 @@ class Output {
 
         do Screen.setColor(false); // white
         do Screen.drawRectangle(x, y, x2, y2);
-        do Screen.setColor(true); // white
         return;
     }
 

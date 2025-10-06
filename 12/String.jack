@@ -75,19 +75,36 @@ class String {
      *  until a non-digit character is detected. */
     method int intValue() {
         var int val, i, d;
+        var boolean isNegative;
+
         let val = 0;
         let i = 0;
+        let isNegative = false;
+
+        // Check for negative sign at the beginning
+        if ((length > 0) & (str[0] = 45)) {  // '-' = 45
+            let isNegative = true;
+            let i = 1;  
+        }
+
         while (i < length) {
             let d = str[i] - 48; // '0' = 48
             // non-digit char:
             if ((d < 0) | (d > 9)) {
+                if (isNegative) {
+                    return -val;
+                }
                 return val; 
             }
             let val = (val * 10) + d;
             let i = i + 1;
         }
+        if (isNegative) {
+            return -val;
+        }
         return val;
     }
+
 
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
