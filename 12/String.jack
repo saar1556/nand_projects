@@ -50,9 +50,6 @@ class String {
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
         let str[j] = c;
-        if (j > length - 1) {
-            let length = j + 1;
-        }
         return;
     }
 
@@ -105,20 +102,40 @@ class String {
         return val;
     }
 
-
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
         var int lastDigit, c, i, temp;
+
+        var boolean isNegative;
+        let isNegative = false;
+        if (val < 0) {
+            let isNegative = true;
+            let val = -val;
+        }
+        
+        do helper(val, isNegative);
+        return;
+    }
+
+    method void helper(int val, boolean isNegative) {
+        var int lastDigit, c, i, temp;
+
         let lastDigit = val - ((val / 10) * 10);
         let c = lastDigit + 48; // '0' = 48
         if (val < 10) {
+            if (isNegative) {
+                do setCharAt(0, 45); // '-'
+                do setCharAt(1, c);
+                let length = 2;
+                return;
+            }
             do setCharAt(0, c);
             let length = 1;
             return;
         }
         else {
             let temp = val / 10;
-            do setInt(temp);
+            do helper(temp, isNegative);
             do appendChar(c);
             return;
         }
