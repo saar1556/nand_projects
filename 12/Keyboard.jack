@@ -103,35 +103,9 @@ class Keyboard {
          * entered text is detected). Also handles user backspaces. 
          */
         function int readInt(String message) {
-            var String input;
-            /**
-            var char c;
-
-            let input = String.new(MAX_LEN);
-            do Output.printString(message);
-            
-            while (true) {
-                let c = Keyboard.readChar();
-                if (c = String.newLine()) {
-                    do Output.println();
-                    return input.intValue();
-                } 
-                if (c = String.backSpace()) {
-                    if (input.length() > 0) {
-                        do input.eraseLastChar();
-                        do Output.backSpace();
-                    }
-                } 
-                else {
-                    do input.appendChar(c);
-                    do Output.printChar(c);
-                }
-            }
-            
+            var String input;    
+            let input = Keyboard.readLine(message);
             return input.intValue();
-        */
-        let input = Keyboard.readLine(message);
-        return input.intValue();
         }
-        
+    
 }
