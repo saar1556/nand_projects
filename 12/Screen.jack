@@ -145,7 +145,7 @@ class Screen {
                 let wEnd   = sixteenDivisier[x2];  // x2 / 16 (lookup)
 
                 if (wStart = wEnd) {
-                    // same 16-pixel word → draw pixels
+                    // same 16-pixel word draw pixels
                     let i = x1;
                     while (i < (x2 + 1)) {
                         do Screen.drawPixel(i, y1);
