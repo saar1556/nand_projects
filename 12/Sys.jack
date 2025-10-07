@@ -40,18 +40,16 @@ class Sys {
     /** Displays the given error code in the form "ERR<errorCode>",
      *  and halts the program's execution. */
     function void error(int errorCode) {
-        var String errString, numString;
-        var int i;
-        let errString = "ERR";
-        let numString = "";
-        do numString.setInt(errorCode);
-        let i = 0;
-        while (i < numString.length()) {
-            let errString = errString.appendChar(numString.charAt(i));
-            let i = i + 1;
-        }
+        
+        // print "ERR"
         do Output.moveCursor(0, 0);
-        do Output.printString(errString);
+        do Output.printChar(69);  // E
+        do Output.printChar(82);  // R
+        do Output.printChar(82);  // R
+        
+        // prinnt errorCode
+        do Output.printInt(errorCode);
+        
         do Sys.halt();
         return;
     }
