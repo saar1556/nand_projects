@@ -80,6 +80,9 @@ class CodeWriter:
             jump = 'JGT'
         else: # command == 'lt'
             jump = 'JLT'
+
+        label_prefix = f"{self.file_name}.{command.upper()}_{self.comp_counter}"
+        
         self.output_stream.write(f"// {command} operation\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("AM=M-1\n")
@@ -87,18 +90,18 @@ class CodeWriter:
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M-1\n")
         self.output_stream.write("D=M-D\n")
-        self.output_stream.write(f"@{command.upper()}_{self.comp_counter}\n")
+        self.output_stream.write(f"@{label_prefix}\n")
         self.output_stream.write(f"D;{jump}\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M-1\n")
         self.output_stream.write("M=0\n")
-        self.output_stream.write(f"@{command.upper()}_{self.comp_counter}_END\n")
+        self.output_stream.write(f"@{label_prefix}_END\n")
         self.output_stream.write("0;JMP\n")
-        self.output_stream.write(f"({command.upper()}_{self.comp_counter})\n")
+        self.output_stream.write(f"({label_prefix})\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M-1\n")
         self.output_stream.write("M=-1\n")
-        self.output_stream.write(f"({command.upper()}_{self.comp_counter}_END)\n")
+        self.output_stream.write(f"({label_prefix}_END)\n")
         
         self.comp_counter += 1
 
@@ -290,18 +293,17 @@ class CodeWriter:
             self.output_stream.write(f"({self.file_name}${label})\n")
     
 
-    ###### what if not self.current_function_name??? ######
     def write_goto(self, label: str) -> None:
         """Writes assembly code that affects the goto command.
 
         Args:
             label (str): the label to go to.
         """
-        self.output_stream.write("// goto operation\n")
         if self.current_function_name:
             perfix = self.current_function_name
         else:
             perfix = self.file_name
+        self.output_stream.write("// goto operation\n")
         self.output_stream.write(f"@{perfix}${label}\n")
         self.output_stream.write("0;JMP\n")
     
@@ -311,14 +313,14 @@ class CodeWriter:
         Args:
             label (str): the label to go to.
         """
-        self.output_stream.write("// if-goto operation\n")
-        self.output_stream.write("@SP\n")
-        self.output_stream.write("AM=M-1\n")
-        self.output_stream.write("D=M\n")
         if self.current_function_name:
             perfix = self.current_function_name
         else:
             perfix = self.file_name
+        self.output_stream.write("// if-goto operation\n")
+        self.output_stream.write("@SP\n")
+        self.output_stream.write("AM=M-1\n")
+        self.output_stream.write("D=M\n")
         self.output_stream.write(f"@{perfix}${label}\n")
         self.output_stream.write("D;JNE\n")
     
@@ -359,11 +361,15 @@ class CodeWriter:
             function_name (str): the name of the function to call.
             n_args (int): the number of arguments of the function.
         """
+        caller = self.current_function_name or self.file_name or "BOOTSTRAP"
+        ret_label = f"{caller}$ret.{self.call_counter}"
+
         self.output_stream.write("// call operation\n")
 
          # push return_address
         self.output_stream.write("// push return_address\n")
-        self.output_stream.write(f"@{function_name}$ret.{self.call_counter}\n")
+        self.output_stream.write(f"@{ret_label}\n")
+        #self.output_stream.write(f"@{function_name}$ret.{self.call_counter}\n")
         self.output_stream.write("D=A\n")
         self.output_stream.write("@SP\n")
         self.output_stream.write("A=M\n")
@@ -404,7 +410,8 @@ class CodeWriter:
         self.output_stream.write("0;JMP\n")
 
         # (return_address)
-        self.output_stream.write(f"({function_name}$ret.{self.call_counter})\n")
+        self.output_stream.write(f"({ret_label})\n") 
+        #self.output_stream.write(f"({function_name}$ret.{self.call_counter})\n")
 
         self.call_counter += 1
         return
